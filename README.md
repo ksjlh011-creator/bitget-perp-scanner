@@ -26,7 +26,7 @@ bash scripts/deploy-github.sh
 
 脚本先检查认证、运行测试，再创建独立公开仓库、推送和启用 Pages。已有 origin 时停止，避免覆盖其他项目。脚本需要仓库创建、Actions 和 Pages 配置权限。若组织策略限制启用 Pages，可在新仓库 Settings → Pages → Source 中选 GitHub Actions。部署后 URL 通常为 `https://<用户名>.github.io/bitget-perp-scanner/`，以 Actions 返回的真实 URL 为准。
 
-脚本尚未在当前环境执行发布：当前 CLI 凭据无效。没有声称仓库或线上地址已创建。
+仓库已通过GitHub连接器上传，GitHub Pages首次部署已成功。网页：https://ksjlh011-creator.github.io/bitget-perp-scanner/ 。CLI凭据仍不可用；后续通过连接器维护。真实行情验证与部署状态分别记录，详见VALIDATION.md。
 
 ## 行情与策略
 
