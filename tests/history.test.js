@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {loadHistory} from '../scripts/history.mjs';
+const period=3600000,end=1000*period,source=Array.from({length:500},(_,i)=>[(500+i)*period,100,101,99,100,10]);
+test('rounded exclusive endTime pagination overlaps without missing or duplicate bars',async()=>{let calls=0;const api=async(path,p)=>{calls++;const cursor=Math.floor(+p.endTime/period)*period;return source.filter(r=>r[0]<cursor).slice(-200);};const rows=await loadHistory(api,'BTCUSDT','1H',260,end);assert.equal(calls,2);assert.ok(rows.length>=260);assert.ok(rows.every((r,i)=>!i||r[0]-rows[i-1][0]===period));assert.equal(new Set(rows.map(r=>r[0])).size,rows.length);});
+test('real gaps are rejected, never interpolated',async()=>{const bad=source.filter((_,i)=>i!==350);const api=async(_,p)=>bad.filter(r=>r[0]<+p.endTime).slice(-200);await assert.rejects(loadHistory(api,'BTCUSDT','1H',260,end),/缺口/);});
+test('non-progressing API page fails rather than loops',async()=>{await assert.rejects(loadHistory(async()=>source.slice(-200),'BTCUSDT','1H',260,end),/无进展/);});

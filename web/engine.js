@@ -48,11 +48,11 @@ export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fe
  const setup=pullback?'顺势回踩企稳':reversal?'趋势反转确认':broken?'放量突破':null;
  check('structure15',!!setup,'15分钟未完成回踩收复、结构突破或反转确认');
  const ratio15=s.v/avg(range.map(c=>c.v)),ratio5=b.v/avg(f.slice(-21,-1).map(c=>c.v));
- check('volume15',ratio15>=1.5,`15分钟量比${ratio15.toFixed(2)}，要求≥1.50`);
+ check('volume15',Number.isFinite(ratio15)&&ratio15>=1.5,`15分钟量比${ratio15.toFixed(2)}，要求≥1.50`);
  const fresh5=b.t>=s.t+PERIODS['15m'];
  const level5=setup==='顺势回踩企稳'?(side===1?prev.h:prev.l):(side===1?Math.max(...f.slice(-21,-1).map(c=>c.h)):Math.min(...f.slice(-21,-1).map(c=>c.l)));
  check('confirmation5',fresh5&&directional(b)&&side*(b.c-level5)>0&&side*(b.c-fe.at(-1))>0,'5分钟尚未在15分钟确认后完成同向突破');
- check('volume5',ratio5>=1.5,`5分钟量比${ratio5.toFixed(2)}，要求≥1.50`);
+ check('volume5',Number.isFinite(ratio5)&&ratio5>=1.5,`5分钟量比${ratio5.toFixed(2)}，要求≥1.50`);
  check('trigger1',a.t>=b.t+PERIODS['5m']&&directional(a)&&side*(a.c-(side===1?up.h:up.l))>0&&side*(a.c-ue.at(-1))>0&&side*(ue.at(-1)-ue.at(-3))>0,'1分钟尚未在5分钟收盘后突破前高/低并站稳EMA9');
  const bid=Number(quote?.bidPr),ask=Number(quote?.askPr),ts=Number(quote?.ts);
  check('quote',bid>0&&ask>=bid&&Number.isFinite(ts)&&Math.abs(now-ts)<=60000,'最新报价无效或超过60秒');
