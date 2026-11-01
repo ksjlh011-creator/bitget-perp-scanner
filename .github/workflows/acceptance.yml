@@ -1,0 +1,33 @@
+name: Published mobile WebKit acceptance
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/mobile-acceptance.mjs
+      - .github/workflows/acceptance.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mobile-webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser test runtime only
+        run: npm install --no-save --package-lock=false playwright@1.56.1
+      - name: Install WebKit and system dependencies
+        run: npx playwright install --with-deps webkit
+      - name: Test published site using real API in iPhone WebKit profile
+        run: node scripts/mobile-acceptance.mjs
+      - name: Preserve mobile screenshots and actual downloaded JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-mobile-acceptance
+          path: acceptance-artifacts
+          retention-days: 7
+          if-no-files-found: warn
