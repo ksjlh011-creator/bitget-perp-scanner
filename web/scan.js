@@ -11,7 +11,9 @@ export function prepareFrame(response,granularity){
  if(response.data.some(r=>!Array.isArray(r)||!Number.isFinite(Number(r[0]))))throw new ScanDataError('INVALID_CANDLES','K线时间无效');
  const rows=response.data.filter(r=>Array.isArray(r)&&Number.isFinite(Number(r[0]))&&+r[0]+period<=time).sort((a,b)=>+a[0]-+b[0]);
  if(rows.length<100)throw new ScanDataError('CANDLE_COUNT_SHORT',`${granularity}仅${rows.length}根已收盘K线，要求100根`);
- const selected=rows.slice(-100);closedCandles(selected,period,time);
+ const selected=rows.slice(-100);
+ if(selected.some(r=>r.length<6||r.slice(0,6).some(v=>v==null||v===''||typeof v==='boolean')))throw new ScanDataError('INVALID_CANDLES','已收盘OHLCV字段缺失或类型无效');
+ closedCandles(selected,period,time);
  return {granularity,count:100,status:'ok',serverTime:time,receivedAtClientTime:response.receivedAtClientTime,rows:selected,candles:selected.map(r=>({time:Number(r[0]),closeTime:Number(r[0])+period,open:String(r[1]),high:String(r[2]),low:String(r[3]),close:String(r[4]),volume:String(r[5]),...(r[6]!=null?{quoteVolume:String(r[6])}:{})}))};
 }
 export function validateQuote(quote,serverTime,symbol){
