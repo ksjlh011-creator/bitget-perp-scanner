@@ -1,54 +1,415 @@
 {
-  "run": "https://github.com/ksjlh011-creator/bitget-perp-scanner/actions/runs/41317158106",
-  "commit": "79e9cbb49bf5d1f6b894a6cc3175210b9349a18a",
-  "summary": {
+  "version": 2,
+  "commit": "449abd36fa4f5ecaaad1a5dc55a8b76a42fb67e3",
+  "run": "https://github.com/ksjlh011-creator/bitget-perp-scanner/actions/runs/41319474383",
+  "tests": {
+    "passed": 28,
+    "failed": 0
+  },
+  "live": {
     "scanned": 40,
     "failures": 0,
     "signals": 0,
-    "requests": 163,
+    "requests": 243,
     "origin": "https://ksjlh011-creator.github.io",
-    "checkedAt": "2026-11-01T14:39:31.293Z"
+    "checkedAt": "2026-11-01T15:08:50.375Z",
+    "corsHttp200Count": 243,
+    "pool": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "ZECUSDT",
+      "HYPEUSDT",
+      "NEARUSDT",
+      "XRPUSDT",
+      "SNDKUSDT",
+      "SOXLUSDT",
+      "PEPEUSDT",
+      "BEAMUSDT",
+      "LSKUSDT",
+      "APRUSDT",
+      "EVAAUSDT",
+      "POWRUSDT",
+      "KORUUSDT",
+      "TRXUSDT",
+      "XPLUSDT",
+      "ENAUSDT",
+      "IDOLUSDT",
+      "CLUSDT",
+      "UNIUSDT",
+      "LINKUSDT",
+      "ANTHROPICUSDT",
+      "GUSDT",
+      "SUIUSDT",
+      "TRUMPUSDT",
+      "XAUUSDT",
+      "XAGUSDT",
+      "AVAXUSDT",
+      "AAVEUSDT",
+      "INTCUSDT",
+      "MUUSDT",
+      "BNBUSDT",
+      "AKEUSDT",
+      "MAGMAUSDT",
+      "ARBUSDT",
+      "牛来USDT",
+      "SNXXUSDT",
+      "PUMPUSDT"
+    ]
   },
-  "pool": [
-    "BTCUSDT",
-    "ETHUSDT",
-    "SOLUSDT",
-    "ZECUSDT",
-    "HYPEUSDT",
-    "NEARUSDT",
-    "XRPUSDT",
-    "SNDKUSDT",
-    "SOXLUSDT",
-    "PEPEUSDT",
-    "LSKUSDT",
-    "BEAMUSDT",
-    "EVAAUSDT",
-    "APRUSDT",
-    "POWRUSDT",
-    "KORUUSDT",
-    "TRXUSDT",
-    "XPLUSDT",
-    "ENAUSDT",
-    "IDOLUSDT",
-    "CLUSDT",
-    "ANTHROPICUSDT",
-    "UNIUSDT",
-    "LINKUSDT",
-    "GUSDT",
-    "SUIUSDT",
-    "XAUUSDT",
-    "INTCUSDT",
-    "AAVEUSDT",
-    "AVAXUSDT",
-    "XAGUSDT",
-    "BNBUSDT",
-    "MUUSDT",
-    "AKEUSDT",
-    "MAGMAUSDT",
-    "ARBUSDT",
-    "SNXXUSDT",
-    "TRUMPUSDT",
-    "牛来USDT",
-    "ADAUSDT"
-  ]
+  "filters": {
+    "data": {
+      "label": "已收盘数据完整且新鲜",
+      "passed": 40,
+      "failed": 0,
+      "skipped": 0
+    },
+    "cost": {
+      "label": "费用参数有效",
+      "passed": 40,
+      "failed": 0,
+      "skipped": 0
+    },
+    "trend4h": {
+      "label": "4小时趋势明确",
+      "passed": 27,
+      "failed": 13,
+      "skipped": 0
+    },
+    "trend1h": {
+      "label": "1小时趋势明确",
+      "passed": 18,
+      "failed": 22,
+      "skipped": 0
+    },
+    "alignment": {
+      "label": "4H/1H方向一致",
+      "passed": 7,
+      "failed": 33,
+      "skipped": 0
+    },
+    "structure15": {
+      "label": "15分钟结构确认",
+      "passed": 1,
+      "failed": 6,
+      "skipped": 33
+    },
+    "volume15": {
+      "label": "15分钟成交量≥前20根均量1.5倍",
+      "passed": 1,
+      "failed": 6,
+      "skipped": 33
+    },
+    "confirmation5": {
+      "label": "5分钟在15分钟确认后同向突破",
+      "passed": 0,
+      "failed": 7,
+      "skipped": 33
+    },
+    "volume5": {
+      "label": "5分钟成交量≥前20根均量1.5倍",
+      "passed": 2,
+      "failed": 5,
+      "skipped": 33
+    },
+    "trigger1": {
+      "label": "1分钟在5分钟确认后触发",
+      "passed": 0,
+      "failed": 7,
+      "skipped": 33
+    },
+    "quote": {
+      "label": "最新双边报价有效",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 33
+    },
+    "zone": {
+      "label": "报价位于入场区间且未追价",
+      "passed": 1,
+      "failed": 6,
+      "skipped": 33
+    },
+    "stop": {
+      "label": "结构止损距离0.8–3 ATR",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 39
+    },
+    "targets": {
+      "label": "两档未突破结构目标且适合短线",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 39
+    },
+    "rr": {
+      "label": "最差入场价下第一止盈净RR≥2",
+      "passed": 0,
+      "failed": 1,
+      "skipped": 39
+    }
+  },
+  "backtest": {
+    "from": "2026-10-30T15:01:00.000Z",
+    "to": "2026-11-01T15:01:00.000Z",
+    "source": "Bitget V2 history-candles, real historical data",
+    "limitations": [
+      "仅4个指定币种最近48小时，不是历史全市场前40的无幸存者偏差回测",
+      "收盘后参考已知1m收盘价±区间，以最差区间价假定成交；无历史盘口和成交排队数据",
+      "同K线止损优先、跳空不利成交、两档各50%、最长120分钟；未结束交易不计胜负",
+      "误报率定义为已结束交易净亏损或持平比例，不等于人工标注误报",
+      "不包含资金费及市场冲击；零交易或样本少时不能证明策略盈利",
+      "成本场景会重新筛选信号；并非同一组交易的因果成本比较"
+    ],
+    "results": [
+      {
+        "symbol": "BTCUSDT",
+        "scenarios": [
+          {
+            "name": "zero",
+            "fee": 0,
+            "slip": 0,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "default",
+            "fee": 0.0006,
+            "slip": 0.0005,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "stress",
+            "fee": 0.0012,
+            "slip": 0.001,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          }
+        ]
+      },
+      {
+        "symbol": "ETHUSDT",
+        "scenarios": [
+          {
+            "name": "zero",
+            "fee": 0,
+            "slip": 0,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "default",
+            "fee": 0.0006,
+            "slip": 0.0005,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "stress",
+            "fee": 0.0012,
+            "slip": 0.001,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          }
+        ]
+      },
+      {
+        "symbol": "SOLUSDT",
+        "scenarios": [
+          {
+            "name": "zero",
+            "fee": 0,
+            "slip": 0,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "default",
+            "fee": 0.0006,
+            "slip": 0.0005,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "stress",
+            "fee": 0.0012,
+            "slip": 0.001,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          }
+        ]
+      },
+      {
+        "symbol": "AAVEUSDT",
+        "scenarios": [
+          {
+            "name": "zero",
+            "fee": 0,
+            "slip": 0,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "default",
+            "fee": 0.0006,
+            "slip": 0.0005,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          },
+          {
+            "name": "stress",
+            "fee": 0.0012,
+            "slip": 0.001,
+            "evaluations": 2881,
+            "rawSignals": 0,
+            "signals": 0,
+            "executed": 0,
+            "unfilled": 0,
+            "resolved": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "sameTradesCost": {
+              "zeroPnl": 0,
+              "defaultPnl": 0,
+              "stressPnl": 0
+            }
+          }
+        ]
+      }
+    ]
+  }
 }
