@@ -36,7 +36,7 @@ $('#scan').addEventListener('click',async()=>{
    const latest=report.contracts.at(-1)?.serverTime;if(latest)offset=latest-Date.now();paint();
   }});
   results=scanReport.contracts.map(c=>c.result);paint();
-  const clock=scanReport.serverTimeEnd??scanReport.serverTimeStart;if(clock)offset=clock-Date.now();
+  const latest=scanReport.contracts.filter(c=>c.serverTime!=null).at(-1);const clock=scanReport.serverTimeEnd??latest?.serverTime??scanReport.serverTimeStart;if(clock)offset=scanReport.serverTimeEnd!=null?clock-Date.now():clock-(latest?.serverTimeReceivedAtClientTime??scanReport.startedAtClientTime);
   if(scanReport.complete){$('#status').textContent='40个合约扫描完成，20,000根已收盘K线已就绪。观察不是入场建议。';$('#export-status').textContent='可导出本次完整JSON：40个合约、五周期K线、报价和逐项策略结果。';}
   else{$('#status').textContent=`扫描${scanReport.status==='failed'?'失败':'存在数据错误'}：${scanReport.summary.dataErrors}个合约异常。${scanReport.errors.map(e=>e.message).join('；')} 数据异常不会归为正常等待。`;$('#export-status').textContent='本次数据不完整。仍可导出诊断JSON，其中明确包含错误和缺失标记。';}
   $('#time').textContent=scanReport.complete?new Date(scanReport.serverTimeEnd).toLocaleString('zh-CN'):'数据不完整';$('#export').disabled=false;

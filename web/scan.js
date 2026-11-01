@@ -1,5 +1,5 @@
 import {mix} from './api.js';
-import {analyze,topContracts,closedCandles,PERIODS,aggregateStats} from './engine.js';
+import {analyze,topContracts,closedCandles,PERIODS,aggregateStats,LABELS} from './engine.js';
 export const FRAME_KEYS={'4H':'fourHour','1H':'hour','15m':'structure','5m':'entry','1m':'micro'};
 export class ScanDataError extends Error{constructor(code,message){super(message);this.code=code;}}
 const positive=(v,name)=>{const n=Number(v);if(!Number.isFinite(n)||n<=0)throw new ScanDataError('INVALID_FIELD',`${name}无效`);return n;};
@@ -18,10 +18,11 @@ export function validateQuote(quote,serverTime,symbol){
  if(quote?.symbol!==symbol)throw new ScanDataError('QUOTE_SYMBOL','报价币种不匹配');
  const bid=positive(quote.bidPr,'买一'),ask=positive(quote.askPr,'卖一'),timestamp=positive(quote.ts,'报价时间');
  if(ask<bid||Math.abs(serverTime-timestamp)>60000)throw new ScanDataError('QUOTE_STALE','买卖报价异常或超过60秒');
- return {symbol,bid:quote.bidPr,ask:quote.askPr,timestamp,turnover24hUSDT:String(positive(quote.usdtVolume,'24小时成交额')),serverTime};
+ positive(quote.usdtVolume,'24小时成交额');
+ return {symbol,bid:quote.bidPr,ask:quote.askPr,timestamp,turnover24hUSDT:String(quote.usdtVolume),serverTime};
 }
 function err(error,scope){return {scope,code:error.code||'API_OR_DATA_ERROR',message:error.message};}
-export function dataErrorResult(symbol,errors){return {symbol,status:'数据错误',reason:errors.map(e=>e.message).join('；'),reasons:errors.map(e=>`${e.scope}：${e.message}`),checks:{data:false},score:0,passed:0,total:15,netRR:null};}
+export function dataErrorResult(symbol,errors){return {symbol,status:'数据错误',reason:errors.map(e=>e.message).join('；'),reasons:errors.map(e=>`${e.scope}：${e.message}`),checks:{...Object.fromEntries(Object.keys(LABELS).map(k=>[k,null])),data:false},score:0,passed:0,total:15,netRR:null};}
 export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}){
  const report={schemaVersion:1,source:'Bitget official V2 public market API',productType:'USDT-FUTURES',requestedContracts:40,requestedClosedCandlesPerTimeframe:100,timeframes:Object.keys(PERIODS),status:'running',complete:false,startedAtClientTime:Date.now(),serverTimeStart:null,serverTimeEnd:null,feePerSide:fee,slippagePerSide:slip,selection:{method:'normal USDT perpetual contracts ranked by 24h usdtVolume DESC',rankedContracts:[]},contracts:[],errors:[],semantics:{candleTime:'UTC Unix milliseconds, candle open time; closeTime is exclusive',decimalFields:'OHLCV and API quotes retained as decimal strings',volume:'Bitget base volume; quoteVolume retained when supplied',snapshot:'Only this scan, no persisted cache. Quote is as of its timestamp, not export time.',candles:'Exactly 100 closed candles on success; incomplete frames explicitly marked error.',netRR:'Worst entry in zone; both entry/exit fees and slippage; null means unavailable, never zero.',sequence:'Contracts fetched sequentially. Each frame cutoff uses its own API response requestTime.'}};
  try{
@@ -29,7 +30,7 @@ export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}
   const contracts=await api(mix+'contracts',{productType:'USDT-FUTURES'}),tickers=await api(mix+'tickers',{productType:'USDT-FUTURES'});
   const selected=topContracts(tickers,contracts);
   if(selected.length!==40||new Set(selected.map(t=>t.symbol)).size!==40)throw new ScanDataError('POOL_SIZE',`扫描池必须为40个不同合约，实际${selected.length}`);
-  report.selection.rankedContracts=selected.map((t,i)=>({rank:i+1,symbol:t.symbol,turnover24hUSDT:String(positive(t.usdtVolume,'筛选成交额')),lastPrice:t.lastPr,rankingTimestamp:t.ts??null}));
+  report.selection.rankedContracts=selected.map((t,i)=>({rank:i+1,symbol:t.symbol,turnover24hUSDT:String(positive(t.usdtVolume,'筛选成交额')),lastPrice:t.lastPr,turnover24hUSDTDecimal:String(t.usdtVolume),rankingTimestamp:t.ts??null}));
   for(const [i,ticker] of selected.entries()){
    const contract={symbol:ticker.symbol,rank:i+1,turnover24hUSDTAtSelection:String(ticker.usdtVolume),status:'running',serverTime:null,frames:{},quote:null,errors:[],result:null};
    const raw={};onProgress({index:i,total:40,symbol:ticker.symbol,report});
@@ -41,7 +42,7 @@ export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}
    }
    let quote;
    try{const quotes=await api(mix+'ticker',{symbol:ticker.symbol,productType:'USDT-FUTURES'});quote=quotes?.[0];}catch(e){contract.errors.push(err(e,'quote'));}
-   try{const clock=await api('/api/v2/public/time');contract.serverTime=positive(clock.serverTime,'Bitget服务器时间');}catch(e){contract.errors.push(err(e,'serverTime'));}
+   try{const clock=await api('/api/v2/public/time');contract.serverTime=positive(clock.serverTime,'Bitget服务器时间');contract.serverTimeReceivedAtClientTime=Date.now();}catch(e){contract.errors.push(err(e,'serverTime'));}
    if(quote&&contract.serverTime){try{contract.quote=validateQuote(quote,contract.serverTime,ticker.symbol);}catch(e){contract.errors.push(err(e,'quote'));}}
    else if(!contract.errors.some(e=>e.scope==='quote'))contract.errors.push(err(new Error('最新报价缺失'),'quote'));
    if(!contract.errors.length){
@@ -61,8 +62,10 @@ export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}
 }
 export function makeExport(report,clientTime=Date.now()){
  if(!report||report.status==='running')throw new ScanDataError('NOT_READY','扫描尚未结束，不能导出');
- const clone=JSON.parse(JSON.stringify(report));const reference=report.serverTimeEnd??report.serverTimeStart;
- const estimatedServerTime=reference==null?null:reference+(clientTime-report.finishedAtClientTime);
+ const clone=JSON.parse(JSON.stringify(report));const latest=report.contracts.filter(c=>c.serverTime!=null).at(-1);
+ const reference=report.serverTimeEnd??latest?.serverTime??report.serverTimeStart;
+ const referenceClient=report.serverTimeEnd!=null?report.finishedAtClientTime:latest?.serverTimeReceivedAtClientTime??report.startedAtClientTime;
+ const estimatedServerTime=reference==null?null:reference+(clientTime-referenceClient);
  clone.export={exportedAtClientTime:clientTime,estimatedServerTimeAtExport:estimatedServerTime,note:'本次扫描历史快照，报价和信号只在各自时间点有效；导出不重新获取行情。',incomplete:!report.complete};
  for(const c of clone.contracts){const r=c.result;if(r){r.expiredAtExport=r.expiresAt!=null&&estimatedServerTime!=null&&estimatedServerTime>=r.expiresAt;r.statusAtExport=r.expiredAtExport?'观察（确认已过期）':r.status;}}
  clone.entryCandidates=clone.contracts.filter(c=>c.result?.status==='可入场'&&!c.result?.expiredAtExport).map(c=>({symbol:c.symbol,...c.result}));
