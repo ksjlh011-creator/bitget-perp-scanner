@@ -1,9 +1,9 @@
 {
-  "strategyMode": "trend-pullback-scalping",
-  "commit": "e5b0588a1f81c058deccfe3b4422a8a91aa81448",
-  "run": "https://github.com/ksjlh011-creator/bitget-perp-scanner/actions/runs/41322083613",
+  "strategyMode": "trend-pullback-structural-stop-v3",
+  "commit": "b8323e83994a346a9356d2b22b2ac29adca3e0ff",
+  "run": "https://github.com/ksjlh011-creator/bitget-perp-scanner/actions/runs/41324116186",
   "tests": {
-    "passed": 46,
+    "passed": 61,
     "failed": 0
   },
   "live": {
@@ -12,63 +12,183 @@
     "dataErrors": 0,
     "signals": 0,
     "focusedObservations": 0,
-    "observations": 0,
-    "waiting": 40,
-    "requests": 288,
+    "observations": 1,
+    "waiting": 39,
+    "requests": 287,
     "candleCount": 20000,
     "frames": 200,
-    "serverTimeStart": 1793547508736,
-    "serverTimeEnd": 1793547624678,
-    "jsonBytes": 6430855,
+    "serverTimeStart": 1793549110476,
+    "serverTimeEnd": 1793549211295,
+    "jsonBytes": 6448594,
     "origin": "https://ksjlh011-creator.github.io",
-    "checkedAt": "2026-11-01T15:40:24.678Z"
+    "checkedAt": "2026-11-01T16:06:51.295Z"
   },
-  "httpStatusCounts": {
-    "200": 288
-  },
-  "corsWildcardSuccessCount": 288,
+  "http200": 287,
+  "corsWildcard200": 287,
   "history": {
-    "from": "2026-10-30T15:32:00.000Z",
-    "to": "2026-11-01T15:32:00.000Z",
     "source": "Bitget V2 history-candles, real historical data",
-    "limitations": [
-      "仅4个指定币种最近48小时，不是历史全市场前40的无幸存者偏差回测",
-      "收盘后参考已知1m收盘价±区间，以最差区间价假定成交；无历史盘口和成交排队数据",
-      "同K线止损优先、跳空不利成交、两档各50%、最长120分钟；未结束交易不计胜负",
-      "误报率定义为已结束交易净亏损或持平比例，不等于人工标注误报",
-      "不包含资金费及市场冲击；零交易或样本少时不能证明策略盈利",
-      "成本场景会重新筛选信号；并非同一组交易的因果成本比较"
+    "from": "2026-10-25T15:57:00.000Z",
+    "to": "2026-11-01T15:57:00.000Z",
+    "initialEquity": 10000,
+    "capitalModel": "10000 USDT hypothetical evaluation capital per symbol, settled trade PnL compounds only after exit, no shared portfolio, no user balance assumed",
+    "stopBuffers": [
+      0.3,
+      0.5,
+      0.8,
+      1
     ],
-    "results": [
+    "defaultBuffer": 0.5,
+    "selection": "No best buffer selected; 0.5 remains provisional, compare all four at identical default costs",
+    "limitations": [
+      "仅4个指定币种最近7天，不是历史全市场动态前40的无幸存者偏差回测",
+      "回测权益仅为显式评估参数，不是用户真实余额；缺少历史下单规格时数量为理论估算",
+      "收盘后1m价格区间、次分钟开盘在区间内才假定成交，以区间最差价计，无历史盘口/队列",
+      "同K双触先止损、跳空不利成交、两档各50%、最长120分钟；未结束交易不计胜负",
+      "单笔计划风险≤当时模拟权益1%，不保证跳空后的实际损失不超1%，不含资金费或额外市场冲击",
+      "4种缓冲用同一数据、同一默认费用重算RR和入场；不会为凑RR变换结构；成本零/双倍只对0.5做附加对照",
+      "零交易/少样本不能比较止损优劣或证明盈利，不因回测收益自动调参"
+    ],
+    "reports": [
       {
         "symbol": "BTCUSDT",
         "scenarios": [
           {
-            "name": "zero",
+            "name": "default",
+            "stopBuffer": 0.3,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 195,
+              "anchorsFound": 190,
+              "noAnchor": 5,
+              "valid": 111,
+              "meanDistanceATR": 3.118465423588439,
+              "rrRejected": 195
+            }
           },
           {
             "name": "default",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 195,
+              "anchorsFound": 190,
+              "noAnchor": 5,
+              "valid": 93,
+              "meanDistanceATR": 3.3184654235884294,
+              "rrRejected": 195
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 0.8,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 195,
+              "anchorsFound": 190,
+              "noAnchor": 5,
+              "valid": 65,
+              "meanDistanceATR": 3.61846542358844,
+              "rrRejected": 195
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 1,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 195,
+              "anchorsFound": 190,
+              "noAnchor": 5,
+              "valid": 48,
+              "meanDistanceATR": 3.8184654235884374,
+              "rrRejected": 195
+            }
+          },
+          {
+            "name": "zero",
+            "stopBuffer": 0.5,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 195,
+              "anchorsFound": 190,
+              "noAnchor": 5,
+              "valid": 93,
+              "meanDistanceATR": 3.3184654235884294,
+              "rrRejected": 188
+            }
           },
           {
             "name": "stress",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 195,
+              "anchorsFound": 190,
+              "noAnchor": 5,
+              "valid": 93,
+              "meanDistanceATR": 3.3184654235884294,
+              "rrRejected": 195
+            }
           }
         ]
       },
@@ -76,31 +196,142 @@
         "symbol": "ETHUSDT",
         "scenarios": [
           {
-            "name": "zero",
+            "name": "default",
+            "stopBuffer": 0.3,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 285,
+              "anchorsFound": 256,
+              "noAnchor": 29,
+              "valid": 134,
+              "meanDistanceATR": 2.922767230995733,
+              "rrRejected": 285
+            }
           },
           {
             "name": "default",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 285,
+              "anchorsFound": 256,
+              "noAnchor": 29,
+              "valid": 117,
+              "meanDistanceATR": 3.122767230995735,
+              "rrRejected": 285
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 0.8,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 285,
+              "anchorsFound": 256,
+              "noAnchor": 29,
+              "valid": 92,
+              "meanDistanceATR": 3.4227672309957384,
+              "rrRejected": 285
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 1,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 285,
+              "anchorsFound": 256,
+              "noAnchor": 29,
+              "valid": 74,
+              "meanDistanceATR": 3.6227672309957337,
+              "rrRejected": 285
+            }
+          },
+          {
+            "name": "zero",
+            "stopBuffer": 0.5,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 285,
+              "anchorsFound": 256,
+              "noAnchor": 29,
+              "valid": 117,
+              "meanDistanceATR": 3.122767230995735,
+              "rrRejected": 277
+            }
           },
           {
             "name": "stress",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 285,
+              "anchorsFound": 256,
+              "noAnchor": 29,
+              "valid": 117,
+              "meanDistanceATR": 3.122767230995735,
+              "rrRejected": 285
+            }
           }
         ]
       },
@@ -108,31 +339,142 @@
         "symbol": "SOLUSDT",
         "scenarios": [
           {
-            "name": "zero",
+            "name": "default",
+            "stopBuffer": 0.3,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 450,
+              "anchorsFound": 435,
+              "noAnchor": 15,
+              "valid": 168,
+              "meanDistanceATR": 3.2961590120284545,
+              "rrRejected": 450
+            }
           },
           {
             "name": "default",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 450,
+              "anchorsFound": 435,
+              "noAnchor": 15,
+              "valid": 117,
+              "meanDistanceATR": 3.496159012028457,
+              "rrRejected": 450
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 0.8,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 450,
+              "anchorsFound": 435,
+              "noAnchor": 15,
+              "valid": 73,
+              "meanDistanceATR": 3.79615901202845,
+              "rrRejected": 450
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 1,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 450,
+              "anchorsFound": 435,
+              "noAnchor": 15,
+              "valid": 49,
+              "meanDistanceATR": 3.996159012028443,
+              "rrRejected": 450
+            }
+          },
+          {
+            "name": "zero",
+            "stopBuffer": 0.5,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 450,
+              "anchorsFound": 435,
+              "noAnchor": 15,
+              "valid": 117,
+              "meanDistanceATR": 3.496159012028457,
+              "rrRejected": 449
+            }
           },
           {
             "name": "stress",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 450,
+              "anchorsFound": 435,
+              "noAnchor": 15,
+              "valid": 117,
+              "meanDistanceATR": 3.496159012028457,
+              "rrRejected": 450
+            }
           }
         ]
       },
@@ -140,126 +482,186 @@
         "symbol": "AAVEUSDT",
         "scenarios": [
           {
-            "name": "zero",
+            "name": "default",
+            "stopBuffer": 0.3,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 300,
+              "anchorsFound": 220,
+              "noAnchor": 80,
+              "valid": 75,
+              "meanDistanceATR": 3.4092127711653566,
+              "rrRejected": 300
+            }
           },
           {
             "name": "default",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 300,
+              "anchorsFound": 220,
+              "noAnchor": 80,
+              "valid": 47,
+              "meanDistanceATR": 3.6092127711653608,
+              "rrRejected": 300
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 0.8,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 300,
+              "anchorsFound": 220,
+              "noAnchor": 80,
+              "valid": 22,
+              "meanDistanceATR": 3.909212771165359,
+              "rrRejected": 300
+            }
+          },
+          {
+            "name": "default",
+            "stopBuffer": 1,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 300,
+              "anchorsFound": 220,
+              "noAnchor": 80,
+              "valid": 19,
+              "meanDistanceATR": 4.10921277116536,
+              "rrRejected": 300
+            }
+          },
+          {
+            "name": "zero",
+            "stopBuffer": 0.5,
+            "signals": 0,
+            "executed": 0,
+            "resolved": 0,
+            "stopOuts": 0,
+            "losses": 0,
+            "falsePositiveRate": null,
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 300,
+              "anchorsFound": 220,
+              "noAnchor": 80,
+              "valid": 47,
+              "meanDistanceATR": 3.6092127711653608,
+              "rrRejected": 299
+            }
           },
           {
             "name": "stress",
+            "stopBuffer": 0.5,
             "signals": 0,
             "executed": 0,
             "resolved": 0,
+            "stopOuts": 0,
             "losses": 0,
             "falsePositiveRate": null,
-            "netR": 0
+            "netR": 0,
+            "netPnl": 0,
+            "endingEquity": 10000,
+            "maxPlannedRiskFraction": null,
+            "realizedRiskBreaches": 0,
+            "stopDiagnostics": {
+              "evaluated": 300,
+              "anchorsFound": 220,
+              "noAnchor": 80,
+              "valid": 47,
+              "meanDistanceATR": 3.6092127711653608,
+              "rrRejected": 300
+            }
           }
         ]
       }
     ]
   },
-  "filters": {
-    "data": {
-      "label": "已收盘数据完整且新鲜",
-      "passed": 40,
-      "failed": 0,
-      "skipped": 0
+  "comparisonSummary": [
+    {
+      "buffer": 0.3,
+      "evaluated": 1230,
+      "anchorsFound": 1101,
+      "validStop": 488,
+      "signals": 0,
+      "executed": 0,
+      "rrRejected": 1230
     },
-    "cost": {
-      "label": "费用参数有效",
-      "passed": 40,
-      "failed": 0,
-      "skipped": 0
+    {
+      "buffer": 0.5,
+      "evaluated": 1230,
+      "anchorsFound": 1101,
+      "validStop": 374,
+      "signals": 0,
+      "executed": 0,
+      "rrRejected": 1230
     },
-    "trend4h": {
-      "label": "4小时趋势明确",
-      "passed": 27,
-      "failed": 13,
-      "skipped": 0
+    {
+      "buffer": 0.8,
+      "evaluated": 1230,
+      "anchorsFound": 1101,
+      "validStop": 252,
+      "signals": 0,
+      "executed": 0,
+      "rrRejected": 1230
     },
-    "trend1h": {
-      "label": "1小时趋势明确",
-      "passed": 18,
-      "failed": 22,
-      "skipped": 0
-    },
-    "alignment": {
-      "label": "4H/1H方向一致",
-      "passed": 7,
-      "failed": 33,
-      "skipped": 0
-    },
-    "structure15": {
-      "label": "15分钟顺势回踩收复确认",
-      "passed": 0,
-      "failed": 7,
-      "skipped": 33
-    },
-    "volume15": {
-      "label": "15分钟成交量≥前20根均量1.5倍",
-      "passed": 1,
-      "failed": 6,
-      "skipped": 33
-    },
-    "confirmation5": {
-      "label": "5分钟在15分钟确认后同向突破",
-      "passed": 0,
-      "failed": 7,
-      "skipped": 33
-    },
-    "volume5": {
-      "label": "5分钟成交量≥前20根均量1.5倍",
-      "passed": 3,
-      "failed": 4,
-      "skipped": 33
-    },
-    "trigger1": {
-      "label": "1分钟在5分钟确认后触发",
-      "passed": 0,
-      "failed": 7,
-      "skipped": 33
-    },
-    "quote": {
-      "label": "最新双边报价有效",
-      "passed": 7,
-      "failed": 0,
-      "skipped": 33
-    },
-    "zone": {
-      "label": "报价位于入场区间且未追价",
-      "passed": 4,
-      "failed": 3,
-      "skipped": 33
-    },
-    "stop": {
-      "label": "结构止损距离0.8–3 ATR",
-      "passed": 0,
-      "failed": 0,
-      "skipped": 40
-    },
-    "targets": {
-      "label": "两档未突破结构目标且适合短线",
-      "passed": 0,
-      "failed": 0,
-      "skipped": 40
-    },
-    "rr": {
-      "label": "最差入场价下第一止盈净RR≥2",
-      "passed": 0,
-      "failed": 0,
-      "skipped": 40
+    {
+      "buffer": 1,
+      "evaluated": 1230,
+      "anchorsFound": 1101,
+      "validStop": 190,
+      "signals": 0,
+      "executed": 0,
+      "rrRejected": 1230
     }
-  }
+  ],
+  "defaultBuffer": 0.5,
+  "optimalBuffer": null,
+  "riskScope": "1% of manually supplied equity, planned loss incl. fees/slippage, no actual loss guarantee"
 }
