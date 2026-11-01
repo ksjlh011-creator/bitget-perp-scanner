@@ -41,7 +41,8 @@ export function positionSize({equity,entry,stop,side,fee=.0006,slip=.0005,rules=
  let quantity=step?Math.floor(theoretical/step)*step:Math.floor(theoretical*1e10)/1e10;
  if(!Number.isFinite(theoretical)||!Number.isFinite(quantity)){result.reason='仓位计算超出有效数值范围';return result;}
  // Conservative correction for floating-point rounding; never round risk upward.
- while(quantity>0&&(quantity*unitLoss>result.riskBudget||quantity*notionalPrice>equity))quantity=step?Math.max(0,quantity-step):Math.max(0,quantity-1e-10);
+ for(let i=0;i<4&&quantity>0&&(quantity*unitLoss>result.riskBudget||quantity*notionalPrice>equity);i++){const decrement=Math.max(step??1e-10,Math.abs(quantity)*Number.EPSILON*8);const smaller=Math.max(0,quantity-decrement);quantity=step?Math.floor(smaller/step)*step:Math.floor(smaller*1e10)/1e10;}
+ if(quantity*unitLoss>result.riskBudget||quantity*notionalPrice>equity){result.reason='数量精度无法安全满足风险上限，不给出仓位';return result;}
  const minQty=Number(rules?.minTradeNum)||0,minNotional=Number(rules?.minTradeUSDT)||0;
  if(!(quantity>0)||quantity<minQty||quantity*entry<minNotional){result.reason='风险预算不足以满足合约最小下单量或最小名义金额，不上调仓位';return result;}
  Object.assign(result,{status:step?'sized':'estimate',quantity,notional:quantity*entry,maxZoneNotional:quantity*notionalPrice,plannedLoss:quantity*unitLoss,plannedRiskFraction:quantity*unitLoss/equity,roundedToStep:step,reason:step?'按公开合约数量步长向下取整':'理论数量估算；缺少历史/公开下单步长，实际下单前需核对规格'});return result;
