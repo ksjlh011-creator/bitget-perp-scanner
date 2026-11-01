@@ -28,3 +28,16 @@ jobs:
           path: web
       - uses: actions/deploy-pages@v4
         id: deployment
+  verify-live:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify real Bitget API, CORS and all 40 contracts
+        run: npm run verify:api
