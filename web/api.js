@@ -2,7 +2,7 @@ const BASE='https://api.bitget.com';
 let tail=Promise.resolve();
 // Global request queue keeps all endpoints below 5 requests/sec, including retries.
 export function createAPI(fetcher=fetch){
-  return async function request(path,params={}){
+  return async function request(path,params={},options={}){
     let error;
     for(let attempt=0;attempt<3;attempt++){
       const turn=tail.then(()=>new Promise(r=>setTimeout(r,220)));tail=turn.catch(()=>{});await turn;
@@ -12,7 +12,7 @@ export function createAPI(fetcher=fetch){
         const body=await response.json();
         if(body.code!=='00000')throw Error(`Bitget ${body.code}: ${body.msg||'请求失败'}`);
         if(body.data==null)throw Error('API返回空数据');
-        return body.data;
+        return options.includeMetadata?{data:body.data,requestTime:Number(body.requestTime),receivedAtClientTime:Date.now()}:body.data;
       }catch(e){error=e;if(attempt<2)await new Promise(r=>setTimeout(r,500*2**attempt));}
     }
     throw Error(`行情请求失败：${error.message}。请检查网络、地区限制或浏览器跨域策略。`);

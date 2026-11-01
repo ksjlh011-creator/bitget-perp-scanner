@@ -26,7 +26,7 @@ export function aggregateStats(results){return Object.fromEntries(Object.keys(LA
 export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fee=.0006,slip=.0005}){
  const checks=Object.fromEntries(Object.keys(LABELS).map(k=>[k,null])),reasons=[];
  const check=(k,ok,reason)=>{checks[k]=!!ok;if(!ok)reasons.push(reason||LABELS[k]+'未通过');return !!ok;};
- const finish=(extra={})=>{const evaluated=Object.values(checks).filter(v=>v!==null),passed=evaluated.filter(Boolean).length;return {symbol,status:checks.alignment&&checks.structure15?'观察':'等待',reason:reasons[0]||'等待确认',reasons,checks,passed,total:Object.keys(checks).length,score:passed/Object.keys(checks).length,...extra};};
+ const finish=(extra={})=>{const evaluated=Object.values(checks).filter(v=>v!==null),passed=evaluated.filter(Boolean).length;return {symbol,status:checks.alignment&&checks.structure15?'观察':'等待',reason:reasons[0]||(extra.status==='可入场'?'全部条件通过':'等待确认'),reasons,checks,passed,total:Object.keys(checks).length,score:passed/Object.keys(checks).length,...extra};};
  if(!check('cost',[fee,slip].every(v=>Number.isFinite(v)&&v>=0&&v<=.01),'费用参数无效'))return finish();
  let q,h,m,f,u;try{q=closedCandles(fourHour,PERIODS['4H'],now);h=closedCandles(hour,PERIODS['1H'],now);m=closedCandles(structure,PERIODS['15m'],now);f=closedCandles(entry,PERIODS['5m'],now);u=closedCandles(micro,PERIODS['1m'],now);check('data',true);}catch(e){check('data',false,e.message);return finish();}
  const side=trend(h),major=trend(q);check('trend4h',major!==0,'4小时趋势不明确');check('trend1h',side!==0,'1小时趋势不明确');check('alignment',side!==0&&side===major,'4小时与1小时未同向');
@@ -69,5 +69,5 @@ export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fe
  const rr=netRR(worst,stop,target1,side,fee,slip),rr2=netRR(worst,stop,target2,side,fee,slip);
  check('rr',checks.stop&&checks.targets&&Number.isFinite(rr)&&rr>=2&&rr2>=2,`第一止盈最差入场净RR${Number.isFinite(rr)?rr.toFixed(2):'不可计算'}，要求≥2.00`);
  const confirmed=Object.values(checks).every(x=>x===true);
- return finish({status:confirmed?'可入场':'观察',direction:side===1?'做多':'做空',kind:setup,...(confirmed?{price,entryLow,entryHigh,stop,target:target1,target1,target2,rr,rr2}:{}),signalTime:a.t+PERIODS['1m'],setupId:`${symbol}:${side}:${s.t}:${setup}`,volumeRatio15:ratio15,volumeRatio5:ratio5,expiresAt:a.t+2*PERIODS['1m'],maxHoldingMinutes:120});
+ return finish({status:confirmed?'可入场':'观察',direction:side===1?'做多':'做空',kind:setup,diagnostics:{computedNetRR:Number.isFinite(rr)?rr:null,computedNetRR2:Number.isFinite(rr2)?rr2:null},...(confirmed?{price,entryLow,entryHigh,stop,target:target1,target1,target2,rr,rr2}:{}),signalTime:a.t+PERIODS['1m'],setupId:`${symbol}:${side}:${s.t}:${setup}`,volumeRatio15:ratio15,volumeRatio5:ratio5,expiresAt:a.t+2*PERIODS['1m'],maxHoldingMinutes:120});
 }

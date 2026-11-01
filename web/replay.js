@@ -1,6 +1,6 @@
 import {analyze,PERIODS,aggregateStats} from './engine.js';
 export function upperBound(rows,time,period){let lo=0,hi=rows.length;while(lo<hi){const mid=(lo+hi)>>1;if(+rows[mid][0]+period<=time)lo=mid+1;else hi=mid;}return lo;}
-export function snapshot(dataset,now,lookback=200){return Object.fromEntries(Object.entries({fourHour:'4H',hour:'1H',structure:'15m',entry:'5m',micro:'1m'}).map(([key,p])=>{const rows=dataset[p],end=upperBound(rows,now,PERIODS[p]);return [key,rows.slice(Math.max(0,end-lookback),end)];}));}
+export function snapshot(dataset,now,lookback=100){return Object.fromEntries(Object.entries({fourHour:'4H',hour:'1H',structure:'15m',entry:'5m',micro:'1m'}).map(([key,p])=>{const rows=dataset[p],end=upperBound(rows,now,PERIODS[p]);return [key,rows.slice(Math.max(0,end-lookback),end)];}));}
 // Long gaps fill at the worse open; short gaps likewise. If both barriers touch,
 // stop is assumed first. TP1 exits half, TP2 exits the remainder. No break-even fiction.
 export function simulateTrade(signal,future,{fee=.0006,slip=.0005,maxMinutes=120}={}){

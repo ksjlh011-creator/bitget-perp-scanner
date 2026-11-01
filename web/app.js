@@ -1,12 +1,13 @@
-import {createAPI,mix,candles} from './api.js';
-import {analyze,topContracts,aggregateStats} from './engine.js';
+import {createAPI} from './api.js';
+import {scanMarket,serializeExport,downloadJSON} from './scan.js';
+import {aggregateStats} from './engine.js';
 const $=s=>document.querySelector(s),api=createAPI();
 const fmt=n=>Number(n).toLocaleString('en-US',{maximumSignificantDigits:8});
 function text(tag,value,cls){const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;}
-let results=[],offset=0,expiryTimer;
+let results=[],offset=0,expiryTimer,scanReport=null;
 const current=r=>r.status==='可入场'&&Date.now()+offset>=r.expiresAt?{...r,status:'观察',reasons:['入场确认已超过有效期，请重新扫描',...r.reasons]}:r;
 function card(result){
- const r=current(result),el=text('article','','card'),row=text('div','','row');row.append(text('span',r.symbol.replace(/USDT$/,' / USDT'),'coin'),text('span',r.status==='可入场'?`${r.direction} · 可入场`:r.status,r.status==='可入场'?(r.direction==='做多'?'long':'short'):'wait'));el.append(row);
+ const r=current(result),el=text('article','','card'),row=text('div','','row');row.append(text('span',r.symbol.replace(/USDT$/,' / USDT'),'coin'),text('span',r.status==='可入场'?`${r.direction} · 可入场`:r.status,r.status==='可入场'?(r.direction==='做多'?'long':'short'):r.status==='数据错误'?'error':'wait'));el.append(row);
  el.append(text('p',`${r.kind||'形态待确认'} · 通过 ${r.passed||0}/${r.total||15} 项`,'reason'));
  if(r.status==='可入场'){
   const grid=text('div','','prices');for(const [k,v] of [['入场区间',`${fmt(r.entryLow)} – ${fmt(r.entryHigh)}`],['结构止损',fmt(r.stop)],['第一止盈（50%）',fmt(r.target1)],['第二止盈（50%）',fmt(r.target2)],['第一止盈净RR',`${r.rr.toFixed(2)} : 1`],['第二止盈净RR',`${r.rr2.toFixed(2)} : 1`]]){const c=text('div','');c.append(text('small',k),text('strong',v));grid.append(c);}el.append(grid,text('p',`最差区间价已扣双边费用 · 1分钟确认 ${new Date(r.signalTime).toLocaleTimeString('zh-CN')} · ${new Date(r.expiresAt).toLocaleTimeString('zh-CN')}过期 · 回放持仓上限120分钟`,'reason'));
@@ -27,19 +28,26 @@ function paint(){
 $('#scan').addEventListener('click',async()=>{
  const fee=Number($('#fee').value)/100,slip=Number($('#slip').value)/100;
  if(!$('#fee').value||!$('#slip').value||![fee,slip].every(n=>Number.isFinite(n)&&n>=0&&n<=.01)){$('#status').textContent='请输入0至1%之间的单边费用。';return;}
- clearTimeout(expiryTimer);results=[];paint();$('#scan').disabled=true;$('#fee').disabled=true;$('#slip').disabled=true;$('#count').textContent='—';$('#time').textContent='扫描中';$('#status').textContent='正在获取真实服务器时间、合约列表及成交额排名…';let failures=0;
+ clearTimeout(expiryTimer);scanReport=null;$('#export').disabled=true;$('#export-status').textContent='扫描结束后可导出本次数据；不读取历史缓存。';results=[];paint();$('#scan').disabled=true;$('#fee').disabled=true;$('#slip').disabled=true;$('#count').textContent='—';$('#time').textContent='扫描中';$('#status').textContent='正在获取真实服务器时间、合约列表及成交额排名…';
  try{
-  const start=Date.now(),clock=await api('/api/v2/public/time');offset=Number(clock.serverTime)-(start+Date.now())/2;if(!Number.isFinite(offset))throw Error('服务器时间无效');
-  const contracts=await api(mix+'contracts',{productType:'USDT-FUTURES'}),tickers=await api(mix+'tickers',{productType:'USDT-FUTURES'}),selected=topContracts(tickers,contracts);if(selected.length!==40)throw Error(`有效扫描池只有${selected.length}个`);$('#count').textContent=40;
-  for(const [i,ticker] of selected.entries()){
-   $('#status').textContent=`正在扫描 ${i+1}/40 · ${ticker.symbol} · 五周期已收盘K线`;
-   let result;try{
-    const fourHour=await candles(api,ticker.symbol,'4H'),hour=await candles(api,ticker.symbol,'1H'),structure=await candles(api,ticker.symbol,'15m'),entry=await candles(api,ticker.symbol,'5m'),micro=await candles(api,ticker.symbol,'1m'),quotes=await api(mix+'ticker',{symbol:ticker.symbol,productType:'USDT-FUTURES'});
-    result=analyze({symbol:ticker.symbol,fourHour,hour,structure,entry,micro,quote:quotes[0]||{},now:Date.now()+offset,fee,slip});if(result.checks.data===false)failures++;
-   }catch(e){failures++;result={symbol:ticker.symbol,status:'等待',reason:`数据不可用：${e.message}`,reasons:[`数据不可用：${e.message}`],checks:{data:false},score:0};}
-   results.push(result);paint();
-  }
-  $('#status').textContent=`40个合约扫描完成，数据异常${failures}个。观察不是入场建议；已过期信号自动降为观察，不自动获取行情。`;$('#time').textContent=new Date().toLocaleString('zh-CN');
- }catch(e){$('#status').textContent=e.message;$('#time').textContent='扫描失败';if(!results.length)$('#results').append(text('div','等待 · 无可用真实行情','empty'));}
+  scanReport=await scanMarket(api,{fee,slip,onProgress:({index,total,symbol,report})=>{
+   $('#status').textContent=`正在扫描 ${index}/${total} · ${symbol} · 五周期各100根已收盘K线`;
+   results=report.contracts.map(c=>c.result);$('#count').textContent=report.selection.rankedContracts.length;
+   const latest=report.contracts.at(-1)?.serverTime;if(latest)offset=latest-Date.now();paint();
+  }});
+  results=scanReport.contracts.map(c=>c.result);paint();
+  const clock=scanReport.serverTimeEnd??scanReport.serverTimeStart;if(clock)offset=clock-Date.now();
+  if(scanReport.complete){$('#status').textContent='40个合约扫描完成，20,000根已收盘K线已就绪。观察不是入场建议。';$('#export-status').textContent='可导出本次完整JSON：40个合约、五周期K线、报价和逐项策略结果。';}
+  else{$('#status').textContent=`扫描${scanReport.status==='failed'?'失败':'存在数据错误'}：${scanReport.summary.dataErrors}个合约异常。${scanReport.errors.map(e=>e.message).join('；')} 数据异常不会归为正常等待。`;$('#export-status').textContent='本次数据不完整。仍可导出诊断JSON，其中明确包含错误和缺失标记。';}
+  $('#time').textContent=scanReport.complete?new Date(scanReport.serverTimeEnd).toLocaleString('zh-CN'):'数据不完整';$('#export').disabled=false;
+ }catch(e){$('#status').textContent=`扫描程序错误：${e.message}`;$('#time').textContent='扫描失败';$('#export').disabled=true;}
  finally{$('#scan').disabled=false;$('#fee').disabled=false;$('#slip').disabled=false;}
+});
+$('#export').addEventListener('click',()=>{
+ try{
+  const content=serializeExport(scanReport),stamp=new Date(scanReport.serverTimeStart??scanReport.startedAtClientTime).toISOString().replace(/[:.]/g,'-');
+  const filename=`bitget-scan-${scanReport.complete?'complete':'INCOMPLETE'}-${stamp}.json`;
+  downloadJSON(content,filename);
+  $('#export-status').textContent=`已发起下载：${filename}。iPhone请点Safari下载箭头，或在“文件→下载项”查找；若打开了JSON预览，点分享→存储到文件。数据为扫描时快照。`;
+ }catch(e){$('#export-status').textContent=`导出失败：${e.message}`;}
 });
