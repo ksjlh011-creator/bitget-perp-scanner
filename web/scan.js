@@ -32,7 +32,7 @@ export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}
   if(selected.length!==40||new Set(selected.map(t=>t.symbol)).size!==40)throw new ScanDataError('POOL_SIZE',`扫描池必须为40个不同合约，实际${selected.length}`);
   report.selection.rankedContracts=selected.map((t,i)=>({rank:i+1,symbol:t.symbol,turnover24hUSDT:String(positive(t.usdtVolume,'筛选成交额')),lastPrice:t.lastPr,turnover24hUSDTDecimal:String(t.usdtVolume),rankingTimestamp:t.ts??null}));
   for(const [i,ticker] of selected.entries()){
-   const contract={symbol:ticker.symbol,rank:i+1,turnover24hUSDTAtSelection:String(ticker.usdtVolume),status:'running',serverTime:null,frames:{},quote:null,errors:[],result:null};
+   const contract={symbol:ticker.symbol,rank:i+1,turnover24hUSDTAtSelection:String(ticker.usdtVolume),status:'running',serverTime:null,frames:{},quote:null,refreshEvents:[],errors:[],result:null};
    const raw={};onProgress({index:i,total:40,symbol:ticker.symbol,report});
    for(const [granularity,key] of Object.entries(FRAME_KEYS)){
     try{
@@ -43,6 +43,21 @@ export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}
    let quote;
    try{const quotes=await api(mix+'ticker',{symbol:ticker.symbol,productType:'USDT-FUTURES'});quote=quotes?.[0];}catch(e){contract.errors.push(err(e,'quote'));}
    try{const clock=await api('/api/v2/public/time');contract.serverTime=positive(clock.serverTime,'Bitget服务器时间');contract.serverTimeReceivedAtClientTime=Date.now();}catch(e){contract.errors.push(err(e,'serverTime'));}
+   // A minute boundary may pass between fetching a closed 1m frame and
+   // sampling the quote/clock. Refresh affected frames once; never reclassify
+   // an in-flight candle using a later clock or accept stale data.
+   if(!contract.errors.length&&contract.serverTime){
+    const stale=Object.entries(contract.frames).filter(([p,f])=>contract.serverTime-f.candles.at(-1).time>=PERIODS[p]*2).map(([p])=>p);
+    if(stale.length){
+     contract.refreshEvents.push({reason:'closed-candle boundary crossed during sequential acquisition',timeframes:stale,serverTime:contract.serverTime});
+     for(const p of stale){try{
+      const response=await api(mix+'candles',{symbol:ticker.symbol,productType:'USDT-FUTURES',granularity:p,limit:'101'},{includeMetadata:true});
+      const frame=prepareFrame(response,p);raw[FRAME_KEYS[p]]=frame.rows;const {rows,...exportFrame}=frame;contract.frames[p]=exportFrame;
+     }catch(e){const error=err(e,p);contract.errors.push(error);contract.frames[p]={granularity:p,status:'error',count:0,candles:[],error};}}
+     try{const quotes=await api(mix+'ticker',{symbol:ticker.symbol,productType:'USDT-FUTURES'});quote=quotes?.[0];}catch(e){contract.errors.push(err(e,'quote'));}
+     try{const clock=await api('/api/v2/public/time');contract.serverTime=positive(clock.serverTime,'Bitget服务器时间');contract.serverTimeReceivedAtClientTime=Date.now();}catch(e){contract.errors.push(err(e,'serverTime'));}
+    }
+   }
    if(quote&&contract.serverTime){try{contract.quote=validateQuote(quote,contract.serverTime,ticker.symbol);}catch(e){contract.errors.push(err(e,'quote'));}}
    else if(!contract.errors.some(e=>e.scope==='quote'))contract.errors.push(err(new Error('最新报价缺失'),'quote'));
    if(!contract.errors.length){
