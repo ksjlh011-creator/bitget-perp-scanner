@@ -1,1 +1,14 @@
-{"name":"bitget-perp-scanner","private":true,"type":"module","scripts":{"test":"node --test","start":"node scripts/serve.mjs","verify:api":"node scripts/verify-api.mjs"},"engines":{"node":">=22"}}
+{
+  "name": "bitget-perp-scanner",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "start": "node scripts/serve.mjs",
+    "verify:api": "node scripts/verify-api.mjs",
+    "backtest": "node scripts/backtest.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

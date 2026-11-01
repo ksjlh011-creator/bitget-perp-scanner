@@ -1,4 +1,4 @@
-name: Test and deploy GitHub Pages
+name: Validate strategy, backtest and deploy Pages
 on:
   push:
     branches: [main]
@@ -11,7 +11,32 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit and no-lookahead replay tests
+        run: npm test
+      - name: Real historical replay, 48 hours, BTC ETH SOL AAVE
+        run: npm run backtest
+      - name: Real API, CORS and top40 five-timeframe scan
+        run: npm run verify:api
+      - name: Preserve real historical data and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strategy-validation
+          path: reports
+          retention-days: 7
+          if-no-files-found: warn
   deploy:
+    needs: validate
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -21,23 +46,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm test
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web
       - uses: actions/deploy-pages@v4
         id: deployment
-  verify-live:
-    needs: deploy
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Verify real Bitget API, CORS and all 40 contracts
-        run: npm run verify:api

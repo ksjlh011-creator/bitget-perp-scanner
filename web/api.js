@@ -19,4 +19,4 @@ export function createAPI(fetcher=fetch){
   };
 }
 export const mix='/api/v2/mix/market/';
-export async function candles(api,symbol,granularity){return api(mix+'candles',{symbol,productType:'USDT-FUTURES',granularity,limit:'100'});}
+export async function candles(api,symbol,granularity){return api(mix+'candles',{symbol,productType:'USDT-FUTURES',granularity,limit:'200'});}

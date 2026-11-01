@@ -1,5 +1,5 @@
 import {createAPI,mix,candles} from '../web/api.js';
-import {topContracts,analyze} from '../web/engine.js';
+import {topContracts,analyze,aggregateStats} from '../web/engine.js';
 const origin='https://ksjlh011-creator.github.io';
 let requests=0;
 const api=createAPI(async(url,options)=>{
@@ -17,19 +17,22 @@ try{
  const tickers=await api(mix+'tickers',{productType:'USDT-FUTURES'});
  const pool=topContracts(tickers,contracts);if(pool.length!==40)throw Error(`扫描池不足40：${pool.length}`);
  console.log('REAL_TOP40',JSON.stringify(pool.map(t=>t.symbol)));
- let failures=0,signals=0;
+ let failures=0,signals=0;const results=[];
  for(const ticker of pool){
   try{
+   const fourHour=await candles(api,ticker.symbol,'4H');
    const hour=await candles(api,ticker.symbol,'1H');
    const structure=await candles(api,ticker.symbol,'15m');
    const entry=await candles(api,ticker.symbol,'5m');
+   const micro=await candles(api,ticker.symbol,'1m');
    const quotes=await api(mix+'ticker',{symbol:ticker.symbol,productType:'USDT-FUTURES'});
-   const result=analyze({symbol:ticker.symbol,hour,structure,entry,quote:quotes[0]||{},now:Date.now()+offset});
-   if(result.reason==='报价缺失或过期')throw Error(result.reason);
-   if(result.status==='信号')signals++;
+   const result=analyze({symbol:ticker.symbol,fourHour,hour,structure,entry,micro,quote:quotes[0]||{},now:Date.now()+offset});
+   if(result.checks.data!==true||result.checks.quote===false)throw Error(result.reasons.join('；'));results.push(result);
+   if(result.status==='可入场')signals++;
    console.log('REAL_RESULT',JSON.stringify(result));
   }catch(e){failures++;console.error('REAL_FAILURE',ticker.symbol,e.message);}
  }
+ console.log('REAL_FILTERS',JSON.stringify(aggregateStats(results)));
  console.log('REAL_SUMMARY',JSON.stringify({scanned:40,failures,signals,requests,origin,checkedAt:new Date().toISOString()}));
  if(failures)throw Error(`${failures}个合约数据验证失败`);
 }catch(e){console.error('API 实测失败：',e.message);process.exitCode=1;}
