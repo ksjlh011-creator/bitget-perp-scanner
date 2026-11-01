@@ -1,0 +1,85 @@
+{
+  "site": "https://ksjlh011-creator.github.io/bitget-perp-scanner/",
+  "commit": "5ea356c83b40ffb05010b512840dbd256049b740",
+  "startedAt": "2026-11-01T16:46:09.336Z",
+  "browser": "Playwright WebKit / iPhone 13 profile (emulation)",
+  "realIphoneSafariVerified": false,
+  "testEquityUSDT": 1000,
+  "testEquityNote": "Explicit acceptance-test input, not the user account balance",
+  "marketSource": "Real Bitget V2 public API; no intercepted, fabricated or fixture responses",
+  "assets": [
+    {
+      "name": "api.js",
+      "sha256": "eec0b214e08cc343936a6922b4be011c7f5f5103d6de1b987ba1b865ae3a4cb1"
+    },
+    {
+      "name": "app.js",
+      "sha256": "d6a1aff1f1501fb21e333b640ab1c30b60ec7fb1e0039d37889b84542a0508db"
+    },
+    {
+      "name": "engine.js",
+      "sha256": "bec20e47c37e5e92ee8c769aa80a287c71ec0277c6ebdc5f98dbfdfddc69f0a2"
+    },
+    {
+      "name": "index.html",
+      "sha256": "0d12db9507bd78aeb847cb00133d16433362a66362b329287f577e1a45e2a0f1"
+    },
+    {
+      "name": "replay.js",
+      "sha256": "7766751d39067bfe79288643c1bdcb7e759bee750430cc61716d6d8a3231093e"
+    },
+    {
+      "name": "risk.js",
+      "sha256": "b612567d3000d3a4404e33ba49a23570eeaa8b1baf5358185b4004a23310b20e"
+    },
+    {
+      "name": "scan.js",
+      "sha256": "4637e74346626ea3c5a97635858d27cf3b333dd6966e339114e1cfa82449e1e9"
+    },
+    {
+      "name": "style.css",
+      "sha256": "8d633a7e942461f0de8594bd980b456c22b1886fb205673c7624690f094cd5ad"
+    }
+  ],
+  "apiStatusCounts": {
+    "200": 290
+  },
+  "requestFailures": [],
+  "pageErrors": [],
+  "unobservedCases": [
+    "No live confirmed entry signal during acceptance; positive entry card not forced or fabricated.",
+    "No live focus-watch candidate during acceptance."
+  ],
+  "invalidEquityRejectedBeforeNetwork": true,
+  "scanStatus": "40个合约扫描完成，20,000根已收盘K线已就绪。观察不是入场建议。",
+  "viewport": {
+    "width": 390,
+    "scrollWidth": 390,
+    "overflowing": []
+  },
+  "filename": "bitget-scan-complete-2026-11-01T16-46-22-186Z.json",
+  "export": {
+    "bytes": 6444916,
+    "contracts": 40,
+    "candles": 20000,
+    "serverTimeStart": 1793551582186,
+    "serverTimeEnd": 1793551684074
+  },
+  "summary": {
+    "selected": 40,
+    "processed": 40,
+    "dataErrors": 0,
+    "signals": 0,
+    "focusedObservations": 0,
+    "observations": 1,
+    "waiting": 39
+  },
+  "stopCalculationChecks": 1,
+  "positionCalculationChecks": 1,
+  "realDownloadVerified": true,
+  "riskDetailVisible": true,
+  "automatedAcceptancePassed": true,
+  "finishedAt": "2026-11-01T16:48:04.716Z",
+  "publicationRun": "https://github.com/ksjlh011-creator/bitget-perp-scanner/actions/runs/41327422618",
+  "mobileRun": "https://github.com/ksjlh011-creator/bitget-perp-scanner/actions/runs/41327895804"
+}
