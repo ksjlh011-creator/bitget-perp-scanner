@@ -5,3 +5,5 @@
 .export-button{margin-top:12px;background:#122b3a;color:#9df8df;border:1px solid #74eed0}.error{color:#ff9a9a;font-weight:600}#export-status{max-width:600px;overflow-wrap:anywhere}
 
 .focused{color:#ffd58a;font-weight:650}
+
+select{width:100%;min-height:46px;background:#152335;border:1px solid #314355;color:white;border-radius:9px;padding:10px;font-size:16px}select:focus-visible{outline:3px solid white;outline-offset:3px}

@@ -24,17 +24,17 @@ export function validateQuote(quote,serverTime,symbol){
  return {symbol,bid:quote.bidPr,ask:quote.askPr,timestamp,turnover24hUSDT:String(quote.usdtVolume),serverTime};
 }
 function err(error,scope){return {scope,code:error.code||'API_OR_DATA_ERROR',message:error.message};}
-export function dataErrorResult(symbol,errors){return {symbol,status:'数据错误',reason:errors.map(e=>e.message).join('；'),reasons:errors.map(e=>`${e.scope}：${e.message}`),checks:{...Object.fromEntries(Object.keys(LABELS).map(k=>[k,null])),data:false},score:0,passed:0,total:15,netRR:null};}
-export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}){
- const report={schemaVersion:1,source:'Bitget official V2 public market API',productType:'USDT-FUTURES',strategyMode:'trend-pullback-scalping',requestedContracts:40,requestedClosedCandlesPerTimeframe:100,timeframes:Object.keys(PERIODS),status:'running',complete:false,startedAtClientTime:Date.now(),serverTimeStart:null,serverTimeEnd:null,feePerSide:fee,slippagePerSide:slip,selection:{method:'normal USDT perpetual contracts ranked by 24h usdtVolume DESC',rankedContracts:[]},contracts:[],errors:[],semantics:{candleTime:'UTC Unix milliseconds, candle open time; closeTime is exclusive',decimalFields:'OHLCV and API quotes retained as decimal strings',volume:'Bitget base volume; quoteVolume retained when supplied',snapshot:'Only this scan, no persisted cache. Quote is as of its timestamp, not export time.',candles:'Exactly 100 closed candles on success; incomplete frames explicitly marked error.',netRR:'Worst entry in zone; both entry/exit fees and slippage; null means unavailable, never zero.',sequence:'Contracts fetched sequentially. Each frame cutoff uses its own API response requestTime.'}};
+export function dataErrorResult(symbol,errors){return {symbol,status:'数据错误',reason:errors.map(e=>e.message).join('；'),reasons:errors.map(e=>`${e.scope}：${e.message}`),checks:{...Object.fromEntries(Object.keys(LABELS).map(k=>[k,null])),data:false},score:0,passed:0,total:Object.keys(LABELS).length,netRR:null};}
+export async function scanMarket(api,{fee=.0006,slip=.0005,stopBuffer=.5,accountEquity=null,onProgress=()=>{}}={}){
+ const report={schemaVersion:1,source:'Bitget official V2 public market API',productType:'USDT-FUTURES',strategyMode:'trend-pullback-structural-stop-v3',requestedContracts:40,requestedClosedCandlesPerTimeframe:100,timeframes:Object.keys(PERIODS),status:'running',complete:false,startedAtClientTime:Date.now(),serverTimeStart:null,serverTimeEnd:null,feePerSide:fee,slippagePerSide:slip,riskSettings:{stopBuffer,stopBufferStatus:'pending historical validation, not optimized',accountEquity,riskFraction:.01,notionalCap:'1x equity',equitySource:accountEquity==null?'not supplied':'user manual input'},selection:{method:'normal USDT perpetual contracts ranked by 24h usdtVolume DESC',rankedContracts:[]},contracts:[],errors:[],semantics:{candleTime:'UTC Unix milliseconds, candle open time; closeTime is exclusive',decimalFields:'OHLCV and API quotes retained as decimal strings',volume:'Bitget base volume; quoteVolume retained when supplied',snapshot:'Only this scan, no persisted cache. Quote is as of its timestamp, not export time.',candles:'Exactly 100 closed candles on success; incomplete frames explicitly marked error.',netRR:'Worst entry in zone; both entry/exit fees and slippage; null means unavailable, never zero.',sequence:'Contracts fetched sequentially. Each frame cutoff uses its own API response requestTime.'}};
  try{
   const time=await api('/api/v2/public/time');report.serverTimeStart=positive(time.serverTime,'Bitget服务器时间');
   const contracts=await api(mix+'contracts',{productType:'USDT-FUTURES'}),tickers=await api(mix+'tickers',{productType:'USDT-FUTURES'});
-  const selected=topContracts(tickers,contracts);
+  const selected=topContracts(tickers,contracts);const contractMap=new Map(contracts.map(c=>[c.symbol,c]));
   if(selected.length!==40||new Set(selected.map(t=>t.symbol)).size!==40)throw new ScanDataError('POOL_SIZE',`扫描池必须为40个不同合约，实际${selected.length}`);
   report.selection.rankedContracts=selected.map((t,i)=>({rank:i+1,symbol:t.symbol,turnover24hUSDT:String(positive(t.usdtVolume,'筛选成交额')),lastPrice:t.lastPr,turnover24hUSDTDecimal:String(t.usdtVolume),rankingTimestamp:t.ts??null}));
   for(const [i,ticker] of selected.entries()){
-   const contract={symbol:ticker.symbol,rank:i+1,turnover24hUSDTAtSelection:String(ticker.usdtVolume),status:'running',serverTime:null,frames:{},quote:null,refreshEvents:[],errors:[],result:null};
+   const contract={symbol:ticker.symbol,rank:i+1,turnover24hUSDTAtSelection:String(ticker.usdtVolume),status:'running',serverTime:null,frames:{},quote:null,refreshEvents:[],contractRules:{sizeMultiplier:contractMap.get(ticker.symbol)?.sizeMultiplier??null,minTradeNum:contractMap.get(ticker.symbol)?.minTradeNum??null,minTradeUSDT:contractMap.get(ticker.symbol)?.minTradeUSDT??null},errors:[],result:null};
    const raw={};onProgress({index:i,total:40,symbol:ticker.symbol,report});
    for(const [granularity,key] of Object.entries(FRAME_KEYS)){
     try{
@@ -63,7 +63,7 @@ export async function scanMarket(api,{fee=.0006,slip=.0005,onProgress=()=>{}}={}
    if(quote&&contract.serverTime){try{contract.quote=validateQuote(quote,contract.serverTime,ticker.symbol);}catch(e){contract.errors.push(err(e,'quote'));}}
    else if(!contract.errors.some(e=>e.scope==='quote'))contract.errors.push(err(new Error('最新报价缺失'),'quote'));
    if(!contract.errors.length){
-    const result=analyze({symbol:ticker.symbol,...raw,quote,now:contract.serverTime,fee,slip});
+    const result=analyze({symbol:ticker.symbol,...raw,quote,now:contract.serverTime,fee,slip,stopBuffer,accountEquity,contractRules:contract.contractRules});
     if(result.checks.data!==true||result.checks.quote===false)contract.errors.push(err(new ScanDataError('ANALYSIS_DATA',result.reasons.join('；')),'analysis'));
     else contract.result={...result,netRR:Number.isFinite(result.rr)?result.rr:result.diagnostics?.computedNetRR??null,netRR2:Number.isFinite(result.rr2)?result.rr2:result.diagnostics?.computedNetRR2??null,analyzedAtServerTime:contract.serverTime};
    }

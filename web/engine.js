@@ -1,5 +1,6 @@
+import {structuralStop,positionSize} from './risk.js';
 export const PERIODS={'4H':14400000,'1H':3600000,'15m':900000,'5m':300000,'1m':60000};
-export const LABELS={data:'已收盘数据完整且新鲜',cost:'费用参数有效',trend4h:'4小时趋势明确',trend1h:'1小时趋势明确',alignment:'4H/1H方向一致',structure15:'15分钟顺势回踩收复确认',volume15:'15分钟成交量≥前20根均量1.5倍',confirmation5:'5分钟在15分钟确认后同向突破',volume5:'5分钟成交量≥前20根均量1.5倍',trigger1:'1分钟在5分钟确认后触发',quote:'最新双边报价有效',zone:'报价位于入场区间且未追价',stop:'结构止损距离0.8–3 ATR',targets:'两档未突破结构目标且适合短线',rr:'最差入场价下第一止盈净RR≥2'};
+export const LABELS={data:'已收盘数据完整且新鲜',cost:'费用参数有效',trend4h:'4小时趋势明确',trend1h:'1小时趋势明确',alignment:'4H/1H方向一致',structure15:'15分钟顺势回踩收复确认',volume15:'15分钟成交量≥前20根均量1.5倍',confirmation5:'5分钟在15分钟确认后同向突破',volume5:'5分钟成交量≥前20根均量1.5倍',trigger1:'1分钟在5分钟确认后触发',quote:'最新双边报价有效',zone:'报价位于入场区间且未追价',stop:'结构止损距离0.8–3 ATR',targets:'两档未突破结构目标且适合短线',rr:'最差入场价下第一止盈净RR≥2',position:'计划亏损≤账户权益1%且仓位有效'};
 const avg=a=>a.reduce((s,v)=>s+v,0)/a.length;
 export function ema(a,n){const out=[];for(const v of a)out.push(out.length?v*2/(n+1)+out.at(-1)*(1-2/(n+1)):v);return out;}
 export function closedCandles(rows,period,now){
@@ -23,7 +24,7 @@ export function selectTargets(frames,side,price,volatility){
  return distinct.slice(0,2);
 }
 export function aggregateStats(results){return Object.fromEntries(Object.keys(LABELS).map(k=>[k,{label:LABELS[k],passed:results.filter(r=>r.checks?.[k]===true).length,failed:results.filter(r=>r.checks?.[k]===false).length,skipped:results.filter(r=>r.checks?.[k]==null).length}]));}
-export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fee=.0006,slip=.0005}){
+export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fee=.0006,slip=.0005,stopBuffer=.5,accountEquity=null,contractRules=null}){
  const checks=Object.fromEntries(Object.keys(LABELS).map(k=>[k,null])),reasons=[];
  const check=(k,ok,reason)=>{checks[k]=!!ok;if(!ok)reasons.push(reason||LABELS[k]+'未通过');return !!ok;};
  const finish=(extra={})=>{const evaluated=Object.values(checks).filter(v=>v!==null),passed=evaluated.filter(Boolean).length;return {symbol,status:checks.alignment&&checks.structure15?'观察':'等待',reason:reasons[0]||(extra.status==='可入场'?'全部条件通过':'等待确认'),reasons,checks,passed,total:Object.keys(checks).length,score:passed/Object.keys(checks).length,...extra};};
@@ -57,16 +58,16 @@ export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fe
  const half=Math.min(v*.15,vu*.25),entryLow=a.c-half,entryHigh=a.c+half,price=side===1?ask:bid,worst=side===1?entryHigh:entryLow;
  check('zone',checks.quote&&price>=entryLow&&price<=entryHigh&&Math.abs(price-b.c)<=v*.5,'报价超出1分钟入场区间或偏离5分钟收盘超过0.5 ATR');
  if(!setup)return finish({direction:side===1?'做多':'做空',volumeRatio15:ratio15,volumeRatio5:ratio5});
- const pivot5=pivots(f).filter(x=>x.kind===lowKind).at(-1);
- const setupStop=side===1?p.l:p.h;
- const stop=setupStop!=null&&pivot5?(side===1?Math.min(setupStop,pivot5.price):Math.max(setupStop,pivot5.price))-side*v*.2:NaN;
- const risk=side*(worst-stop);
- check('stop',risk>=v*.8&&risk<=v*3,'缺少已确认摆动止损，或止损距离不在0.8–3 ATR');
+ const stopDetails=structuralStop(f,{side,entry:worst,atr:v,bufferMultiple:stopBuffer,minTime:p.t-2*PERIODS['15m'],invalidation:side===1?p.l:p.h});
+ const stop=stopDetails.stop;
+ check('stop',stopDetails.valid,stopDetails.reason);
  const targets=selectTargets([m,h],side,worst,v),[target1,target2]=targets;
  check('targets',targets.length===2&&side*(target1-worst)<=6*v&&side*(target2-worst)<=10*v,'缺少两档未突破摆动目标，或目标距离超过短线范围');
  const rr=netRR(worst,stop,target1,side,fee,slip),rr2=netRR(worst,stop,target2,side,fee,slip);
  check('rr',checks.stop&&checks.targets&&Number.isFinite(rr)&&rr>=2&&rr2>=2,`第一止盈最差入场净RR${Number.isFinite(rr)?rr.toFixed(2):'不可计算'}，要求≥2.00`);
+ const positionRisk=positionSize({equity:accountEquity,entry:worst,stop:stopDetails.valid?stop:NaN,side,fee,slip,rules:contractRules,notionalPrice:entryHigh});
+ check('position',stopDetails.valid&&['sized','estimate'].includes(positionRisk.status)&&positionRisk.plannedLoss<=positionRisk.riskBudget,positionRisk.reason);
  const confirmed=Object.values(checks).every(x=>x===true);
- const focused=!confirmed&&['data','cost','trend4h','trend1h','alignment','structure15','volume15','confirmation5','volume5','quote','stop','targets','rr'].every(k=>checks[k]===true);
- return finish({status:confirmed?'可入场':focused?'重点观察':'观察',direction:side===1?'做多':'做空',kind:setup,diagnostics:{computedNetRR:Number.isFinite(rr)?rr:null,computedNetRR2:Number.isFinite(rr2)?rr2:null},...(confirmed?{price,entryLow,entryHigh,stop,target:target1,target1,target2,rr,rr2}:{}),signalTime:a.t+PERIODS['1m'],setupId:`${symbol}:${side}:${s.t}:${setup}`,volumeRatio15:ratio15,volumeRatio5:ratio5,expiresAt:a.t+2*PERIODS['1m'],maxHoldingMinutes:120});
+ const focused=!confirmed&&['data','cost','trend4h','trend1h','alignment','structure15','volume15','confirmation5','volume5','quote','stop','targets','rr','position'].every(k=>checks[k]===true);
+ return finish({status:confirmed?'可入场':focused?'重点观察':'观察',direction:side===1?'做多':'做空',kind:setup,stopDetails,positionRisk,diagnostics:{computedNetRR:Number.isFinite(rr)?rr:null,computedNetRR2:Number.isFinite(rr2)?rr2:null},...(confirmed?{price,entryLow,entryHigh,stop,target:target1,target1,target2,rr,rr2}:{}),signalTime:a.t+PERIODS['1m'],setupId:`${symbol}:${side}:${s.t}:${setup}`,volumeRatio15:ratio15,volumeRatio5:ratio5,expiresAt:a.t+2*PERIODS['1m'],maxHoldingMinutes:120});
 }

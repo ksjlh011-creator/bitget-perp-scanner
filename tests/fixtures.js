@@ -8,5 +8,5 @@ export function fixture(){
  structure[199]=[structure[199][0],100.1,100.7,100,100.6,30];
  entry[194][3]=99.9;entry[198][2]=100.75;entry[199]=[entry[199][0],100.5,101,100.4,100.8,30];
  micro[198]=[micro[198][0],100.7,100.8,100.6,100.75,10];micro[199]=[micro[199][0],100.75,100.9,100.7,100.82,10];
- return {symbol:'TESTUSDT',fourHour,hour,structure,entry,micro,quote:{bidPr:100.82,askPr:100.82,ts:now},now};
+ return {accountEquity:1000,contractRules:{sizeMultiplier:'.001',minTradeNum:'.001',minTradeUSDT:'5'},symbol:'TESTUSDT',fourHour,hour,structure,entry,micro,quote:{bidPr:100.82,askPr:100.82,ts:now},now};
 }

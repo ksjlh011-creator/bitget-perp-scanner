@@ -38,3 +38,7 @@
 `npm run verify:api`通过与网页相同的scanMarket获取真实40币，实际序列化并解析JSON，验证200帧各100根、全部已收盘、总计20,000根。真实文件写入reports/live-scan.json，和原始历史回测报告一起保存在Actions artifact。任何真实验证失败会阻止发布。
 
 iPhone Safari实机下载验收不由Node的Blob/锚点测试代替；在实际手机网络可达Bitget的条件下仍需完成实机验收。
+
+## 结构风险字段升级
+
+JSON保留原有行情字段，并新增riskSettings（ATR参数、手填权益、1%预算）、各合约公开contractRules、result.stopDetails（6/10/15窗口、结构与ATR缓冲依据）和result.positionRisk（基础币数量、费用后预计损失及权益占比）。权益留空为null，不假定真实余额；不能计算的数量也是null。过滤条件增为16项。详见RISK.md。

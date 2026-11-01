@@ -23,7 +23,7 @@ jobs:
           node-version: '22'
       - name: Unit and no-lookahead replay tests
         run: npm test
-      - name: Real historical replay, 48 hours, BTC ETH SOL AAVE
+      - name: Real historical replay, 7 days, 4 ATR buffers, BTC ETH SOL AAVE
         run: npm run backtest
       - name: Real API, CORS and top40 five-timeframe scan
         run: npm run verify:api

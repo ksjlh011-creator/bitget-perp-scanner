@@ -19,11 +19,11 @@ export function simulateTrade(signal,future,{fee=.0006,slip=.0005,maxMinutes=120
  const risk=side*(entry-signal.stop)+(entry+signal.stop)*(fee+slip);
  return {outcome,pnl,netR:pnl/risk,exitTime,resolved:remaining===0,tp1:t1};
 }
-export function replay(dataset,{symbol,from,to,fee=.0006,slip=.0005}={}){
+export function replay(dataset,{symbol,from,to,fee=.0006,slip=.0005,stopBuffer=.5,accountEquity=10000,contractRules=null}={}){
  const times=dataset['1m'].filter(r=>+r[0]+60000>=from&&+r[0]+60000<=to).map(r=>+r[0]+60000);
- const seen=new Set(),results=[],trades=[];let blockedUntil=0,rawSignals=0,uniqueSignals=0,unfilled=0;
- for(const now of times){const frame=snapshot(dataset,now),last=frame.micro.at(-1);if(!last)continue;
-  const result=analyze({symbol,...frame,now,fee,slip,quote:{bidPr:last[4],askPr:last[4],ts:now}});results.push(result);
+ const seen=new Set(),results=[],trades=[];let blockedUntil=0,rawSignals=0,uniqueSignals=0,unfilled=0,balance=accountEquity,pending=null;
+ for(const now of times){if(pending&&pending.exitTime<=now){balance+=pending.netPnl;pending=null;}const frame=snapshot(dataset,now),last=frame.micro.at(-1);if(!last)continue;
+  const result=analyze({symbol,...frame,now,fee,slip,stopBuffer,accountEquity:balance,contractRules,quote:{bidPr:last[4],askPr:last[4],ts:now}});results.push(result);
   if(result.status!=='可入场')continue;rawSignals++;
   if(seen.has(result.setupId)||now<blockedUntil)continue;seen.add(result.setupId);uniqueSignals++;
   const future=dataset['1m'].filter(r=>+r[0]>=now&&+r[0]+60000<=to);
@@ -32,8 +32,10 @@ export function replay(dataset,{symbol,from,to,fee=.0006,slip=.0005}={}){
   const zero=simulateTrade(result,future,{fee:0,slip:0});
   const stress=simulateTrade(result,future,{fee:fee*2,slip:slip*2});
   trade.costComparison={zeroPnl:zero.pnl,defaultPnl:trade.pnl,stressPnl:stress.pnl};
-  trades.push({...trade,signalTime:now,setupId:result.setupId});blockedUntil=trade.resolved?trade.exitTime:Infinity;
+  const quantity=result.positionRisk.quantity;const netPnl=trade.pnl*quantity;const record={...trade,quantity,netPnl,accountEquityAtEntry:balance,plannedRisk:result.positionRisk.plannedLoss,plannedRiskFraction:result.positionRisk.plannedRiskFraction,stopDetails:result.stopDetails,signalTime:now,setupId:result.setupId};trades.push(record);if(trade.resolved)pending=record;blockedUntil=trade.resolved?trade.exitTime:Infinity;
  }
+ if(pending&&pending.exitTime<=to){balance+=pending.netPnl;pending=null;}
+ const stopPlans=results.filter(r=>r.stopDetails);
  const done=trades.filter(t=>t.resolved),losses=done.filter(t=>t.pnl<=0).length;
- return {symbol,evaluations:results.length,rawSignals,signals:uniqueSignals,executed:trades.length,unfilled,resolved:done.length,unresolved:trades.length-done.length,losses,falsePositiveDefinition:'已结束交易净收益≤0（代理指标，不代表所有主观误报）',falsePositiveRate:done.length?losses/done.length:null,tp1Hits:done.filter(t=>t.tp1).length,sameTradesCost:done.reduce((a,t)=>({zeroPnl:a.zeroPnl+t.costComparison.zeroPnl,defaultPnl:a.defaultPnl+t.costComparison.defaultPnl,stressPnl:a.stressPnl+t.costComparison.stressPnl}),{zeroPnl:0,defaultPnl:0,stressPnl:0}),netR:done.reduce((s,t)=>s+t.netR,0),filters:aggregateStats(results),trades};
+ return {symbol,stopBuffer,initialEquity:accountEquity,endingEquity:balance,netPnl:done.reduce((s,t)=>s+t.netPnl,0),maxPlannedRiskFraction:trades.length?Math.max(...trades.map(t=>t.plannedRiskFraction)):null,realizedRiskBreaches:done.filter(t=>-t.netPnl>t.accountEquityAtEntry*.01).length,stopOuts:done.filter(t=>['stop','partial-stop'].includes(t.outcome)).length,stopDiagnostics:{evaluated:stopPlans.length,valid:stopPlans.filter(r=>r.stopDetails.valid).length,meanDistanceATR:stopPlans.length?stopPlans.reduce((s,r)=>s+(r.stopDetails.distanceATR||0),0)/stopPlans.length:null,rrRejected:stopPlans.filter(r=>r.checks.rr===false).length},evaluations:results.length,rawSignals,signals:uniqueSignals,executed:trades.length,unfilled,resolved:done.length,unresolved:trades.length-done.length,losses,falsePositiveDefinition:'已结束交易净收益≤0（代理指标，不代表所有主观误报）',falsePositiveRate:done.length?losses/done.length:null,tp1Hits:done.filter(t=>t.tp1).length,sameTradesCost:done.reduce((a,t)=>({zeroPnl:a.zeroPnl+t.costComparison.zeroPnl*t.quantity,defaultPnl:a.defaultPnl+t.costComparison.defaultPnl*t.quantity,stressPnl:a.stressPnl+t.costComparison.stressPnl*t.quantity}),{zeroPnl:0,defaultPnl:0,stressPnl:0}),netR:done.reduce((s,t)=>s+t.netR,0),filters:aggregateStats(results),trades};
 }
