@@ -33,7 +33,7 @@ try{
  report.scanStatus=await page.locator('#status').textContent();assert.match(report.scanStatus,/40个合约扫描完成/);
  assert.equal(await page.locator('#count').textContent(),'40');assert.equal(await page.locator('#export').isDisabled(),false);
  assert.equal(await page.locator('#equity').isDisabled(),false);assert.equal(await page.locator('#results article').count(),40);
- assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'iPhone viewport must not overflow horizontally');
+ report.viewport=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,overflowing:[...document.querySelectorAll('body *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).slice(0,30).map(el=>({tag:el.tagName,id:el.id,className:el.className,width:el.getBoundingClientRect().width,right:el.getBoundingClientRect().right}))}));
  await page.screenshot({path:`${output}/iphone-profile-scan.png`});
  const downloadEvent=page.waitForEvent('download',{timeout:30000});await page.locator('#export').click();const download=await downloadEvent;
  assert.equal(await download.failure(),null);report.filename=download.suggestedFilename();assert.match(report.filename,/^bitget-scan-complete-.*\.json$/);
@@ -62,6 +62,7 @@ try{
  if(!positionChecks)report.unobservedCases.push('No live valid position size during acceptance; sizing math is covered separately by unit tests.');
  const riskCard=page.locator('#results article').filter({hasText:'5分钟结构止损与风险依据'}).first();
  if(await riskCard.count()){await riskCard.scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/iphone-profile-risk.png`});report.riskDetailVisible=true;}
+ assert.ok(report.viewport.scrollWidth<=report.viewport.width+1,'iPhone viewport must not overflow horizontally');
  assert.equal(report.pageErrors.length,0,`browser errors: ${report.pageErrors.join(';')}`);
  report.automatedAcceptancePassed=true;
 }catch(e){report.automatedAcceptancePassed=false;report.error=e.stack;process.exitCode=1;await page.screenshot({path:`${output}/failure.png`}).catch(()=>{});}

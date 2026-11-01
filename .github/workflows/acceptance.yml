@@ -1,19 +1,21 @@
 name: Published mobile WebKit acceptance
 on:
-  push:
+  workflow_run:
+    workflows: ["Validate strategy, backtest and deploy Pages"]
+    types: [completed]
     branches: [main]
-    paths:
-      - scripts/mobile-acceptance.mjs
-      - .github/workflows/acceptance.yml
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   mobile-webkit:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
