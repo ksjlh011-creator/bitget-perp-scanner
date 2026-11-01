@@ -5,9 +5,9 @@ const $=s=>document.querySelector(s),api=createAPI();
 const fmt=n=>Number(n).toLocaleString('en-US',{maximumSignificantDigits:8});
 function text(tag,value,cls){const el=document.createElement(tag);el.textContent=value;if(cls)el.className=cls;return el;}
 let results=[],offset=0,expiryTimer,scanReport=null;
-const current=r=>r.status==='可入场'&&Date.now()+offset>=r.expiresAt?{...r,status:'观察',reasons:['入场确认已超过有效期，请重新扫描',...r.reasons]}:r;
+const current=r=>['可入场','重点观察'].includes(r.status)&&Date.now()+offset>=r.expiresAt?{...r,status:'观察',reasons:['入场确认已超过有效期，请重新扫描',...r.reasons]}:r;
 function card(result){
- const r=current(result),el=text('article','','card'),row=text('div','','row');row.append(text('span',r.symbol.replace(/USDT$/,' / USDT'),'coin'),text('span',r.status==='可入场'?`${r.direction} · 可入场`:r.status,r.status==='可入场'?(r.direction==='做多'?'long':'short'):r.status==='数据错误'?'error':'wait'));el.append(row);
+ const r=current(result),el=text('article','','card'),row=text('div','','row');row.append(text('span',r.symbol.replace(/USDT$/,' / USDT'),'coin'),text('span',r.status==='可入场'?`${r.direction} · 可入场`:r.status,r.status==='可入场'?(r.direction==='做多'?'long':'short'):r.status==='数据错误'?'error':r.status==='重点观察'?'focused':'wait'));el.append(row);
  el.append(text('p',`${r.kind||'形态待确认'} · 通过 ${r.passed||0}/${r.total||15} 项`,'reason'));
  if(r.status==='可入场'){
   const grid=text('div','','prices');for(const [k,v] of [['入场区间',`${fmt(r.entryLow)} – ${fmt(r.entryHigh)}`],['结构止损',fmt(r.stop)],['第一止盈（50%）',fmt(r.target1)],['第二止盈（50%）',fmt(r.target2)],['第一止盈净RR',`${r.rr.toFixed(2)} : 1`],['第二止盈净RR',`${r.rr2.toFixed(2)} : 1`]]){const c=text('div','');c.append(text('small',k),text('strong',v));grid.append(c);}el.append(grid,text('p',`最差区间价已扣双边费用 · 1分钟确认 ${new Date(r.signalTime).toLocaleTimeString('zh-CN')} · ${new Date(r.expiresAt).toLocaleTimeString('zh-CN')}过期 · 回放持仓上限120分钟`,'reason'));
@@ -18,12 +18,12 @@ function card(result){
 function paint(){
  $('#results').replaceChildren(...results.map(card));
  const active=results.map(current);$('#signals').textContent=active.filter(r=>r.status==='可入场').length;
- $('#candidates').replaceChildren();const candidates=active.filter(r=>r.status==='观察').sort((a,b)=>b.score-a.score).slice(0,5);
+ $('#candidates').replaceChildren();const candidates=active.filter(r=>['观察','重点观察'].includes(r.status)).sort((a,b)=>Number(b.status==='重点观察')-Number(a.status==='重点观察')||b.score-a.score).slice(0,5);
  if(!candidates.length)$('#candidates').append(text('p','暂无具备15分钟结构且大周期同向的观察候选。','reason'));
- for(const r of candidates)$('#candidates').append(text('p',`${r.symbol} · 观察 · ${r.passed}/${r.total} 项 · ${(r.reasons||[]).join('；')}`,'reason'));
+ for(const r of candidates)$('#candidates').append(text('p',`${r.symbol} · ${r.status} · ${r.passed}/${r.total} 项 · ${(r.reasons||[]).join('；')}`,'reason'));
  const table=$('#filters');table.replaceChildren();const tr=text('tr','');for(const title of ['过滤条件','通过','失败','未评估'])tr.append(text('th',title));table.append(tr);
  for(const c of Object.values(aggregateStats(results))){const row=text('tr','');for(const value of [c.label,c.passed,c.failed,c.skipped])row.append(text('td',String(value)));table.append(row);}
- clearTimeout(expiryTimer);const upcoming=results.filter(r=>r.status==='可入场'&&r.expiresAt>Date.now()+offset).map(r=>r.expiresAt-Date.now()-offset);if(upcoming.length)expiryTimer=setTimeout(paint,Math.min(...upcoming)+30);
+ clearTimeout(expiryTimer);const upcoming=results.filter(r=>['可入场','重点观察'].includes(r.status)&&r.expiresAt>Date.now()+offset).map(r=>r.expiresAt-Date.now()-offset);if(upcoming.length)expiryTimer=setTimeout(paint,Math.min(...upcoming)+30);
 }
 $('#scan').addEventListener('click',async()=>{
  const fee=Number($('#fee').value)/100,slip=Number($('#slip').value)/100;

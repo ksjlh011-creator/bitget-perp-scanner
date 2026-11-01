@@ -21,9 +21,9 @@
 - frames：4H/1H/15m/5m/1m各100根，合计20,000根，按开盘时间升序。每根包含time、closeTime、open/high/low/close、volume，API提供时附quoteVolume。价格和量以十进制字符串保存，避免导出时截断精度。time为UTC Unix毫秒，closeTime为下一根开始时刻。
 - 每帧serverTime是该次K线响应的Bitget requestTime。只选closeTime≤该时间的K线，不能用稍后的服务器时间把取数时未收盘的数据当成完整K线。实际请求101根，移除未收盘后取最近100；不足100、重复、缺口、过期或畸形均报错。
 - result：本次分析状态、全部失败原因、逐项过滤布尔值（null=未评估）、入场确认、区间/止损/T1/T2（仅确认信号）、netRR/netRR2、分析服务器时间。观察候选只供分析，不显示可执行入场指令。可计算但不合格的净RR也保留为诊断数值；无法计算为null，不能误读为0。
-- entryCandidates：导出时尚未过期的已确认信号。observationCandidates：全部观察候选及过期信号；closestCandidates最多5个，按通过项数排序。过滤总计在filters，状态统计在summary。
+- entryCandidates：导出时尚未过期的已确认信号。observationCandidates：普通/重点观察候选及过期信号；focusedCandidates仅重点观察；closestCandidates最多5个，按通过项数排序。过滤总计在filters，状态统计在summary。
 
-策略仍要求4H/1H同向、15m和5m量比≥1.5、后续1m触发及最差入场价T1净RR≥2；未改变这些门槛。策略和回放统一使用最近100根窗口，便于用导出的同一输入复核。
+核心仅顺势回踩，不以单独突破/反转触发入场。重点观察不等于可入场。策略仍要求4H/1H同向、15m和5m量比≥1.5、后续1m触发及最差入场价T1净RR≥2；未改变这些门槛。策略和回放统一使用最近100根窗口，便于用导出的同一输入复核。
 
 ## 失败与不完整导出
 

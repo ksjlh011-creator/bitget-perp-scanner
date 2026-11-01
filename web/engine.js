@@ -1,5 +1,5 @@
 export const PERIODS={'4H':14400000,'1H':3600000,'15m':900000,'5m':300000,'1m':60000};
-export const LABELS={data:'已收盘数据完整且新鲜',cost:'费用参数有效',trend4h:'4小时趋势明确',trend1h:'1小时趋势明确',alignment:'4H/1H方向一致',structure15:'15分钟结构确认',volume15:'15分钟成交量≥前20根均量1.5倍',confirmation5:'5分钟在15分钟确认后同向突破',volume5:'5分钟成交量≥前20根均量1.5倍',trigger1:'1分钟在5分钟确认后触发',quote:'最新双边报价有效',zone:'报价位于入场区间且未追价',stop:'结构止损距离0.8–3 ATR',targets:'两档未突破结构目标且适合短线',rr:'最差入场价下第一止盈净RR≥2'};
+export const LABELS={data:'已收盘数据完整且新鲜',cost:'费用参数有效',trend4h:'4小时趋势明确',trend1h:'1小时趋势明确',alignment:'4H/1H方向一致',structure15:'15分钟顺势回踩收复确认',volume15:'15分钟成交量≥前20根均量1.5倍',confirmation5:'5分钟在15分钟确认后同向突破',volume5:'5分钟成交量≥前20根均量1.5倍',trigger1:'1分钟在5分钟确认后触发',quote:'最新双边报价有效',zone:'报价位于入场区间且未追价',stop:'结构止损距离0.8–3 ATR',targets:'两档未突破结构目标且适合短线',rr:'最差入场价下第一止盈净RR≥2'};
 const avg=a=>a.reduce((s,v)=>s+v,0)/a.length;
 export function ema(a,n){const out=[];for(const v of a)out.push(out.length?v*2/(n+1)+out.at(-1)*(1-2/(n+1)):v);return out;}
 export function closedCandles(rows,period,now){
@@ -33,34 +33,32 @@ export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fe
  if(!checks.alignment)return finish();
  const s=m.at(-1),p=m.at(-2),b=f.at(-1),prev=f.at(-2),a=u.at(-1),up=u.at(-2),v=atr(f),vm=atr(m),vu=atr(u);
  if(!(v>0&&vm>0&&vu>0)){check('data',false,'波动数据无效');return finish();}
- const range=m.slice(-21,-1),level=side===1?Math.max(...range.map(c=>c.h)):Math.min(...range.map(c=>c.l));
+ const range=m.slice(-21,-1);
  const me=ema(m.map(c=>c.c),20),fe=ema(f.map(c=>c.c),20),ue=ema(u.map(c=>c.c),9);
  const before=pivots(m.slice(0,-2)),lowKind=side===1?'low':'high',anchor=before.filter(x=>x.kind===lowKind).at(-1);
  const directional=c=>side*(c.c-c.o)>0;
- const broken=directional(s)&&side*(s.c-level)>0;
  // Retest is on the prior 15m candle against ITS EMA, followed by a separate closed reclaim candle.
  const touched=p.l<=me.at(-2)&&p.h>=me.at(-2);
  const reclaimed=side*(s.c-(side===1?p.h:p.l))>0&&side*(s.c-me.at(-1))>0&&directional(s);
  const higherLow=anchor&&side*((side===1?p.l:p.h)-anchor.price)>0;
  const pullback=touched&&reclaimed&&higherLow;
- const lows=before.filter(x=>x.kind===lowKind),opposite=before.filter(x=>x.kind!==(lowKind)).at(-1);
- const reversal=lows.length>=2&&side*(lows.at(-1).price-lows.at(-2).price)<0&&opposite&&directional(s)&&side*(s.c-opposite.price)>0;
- const setup=pullback?'顺势回踩企稳':reversal?'趋势反转确认':broken?'放量突破':null;
- check('structure15',!!setup,'15分钟未完成回踩收复、结构突破或反转确认');
+ const setup=pullback?'顺势回踩企稳':null;
+ check('structure15',!!setup,'15分钟未完成顺势回踩：触及当时EMA20、保持较高低点/较低高点，再由后一根收盘收复');
  const ratio15=s.v/avg(range.map(c=>c.v)),ratio5=b.v/avg(f.slice(-21,-1).map(c=>c.v));
  check('volume15',Number.isFinite(ratio15)&&ratio15>=1.5,`15分钟量比${ratio15.toFixed(2)}，要求≥1.50`);
  const fresh5=b.t>=s.t+PERIODS['15m'];
- const level5=setup==='顺势回踩企稳'?(side===1?prev.h:prev.l):(side===1?Math.max(...f.slice(-21,-1).map(c=>c.h)):Math.min(...f.slice(-21,-1).map(c=>c.l)));
- check('confirmation5',fresh5&&directional(b)&&side*(b.c-level5)>0&&side*(b.c-fe.at(-1))>0,'5分钟尚未在15分钟确认后完成同向突破');
+ const heldStructure=f.filter(c=>c.t>=s.t+PERIODS['15m']).every(c=>side===1?c.l>=p.l:c.h<=p.h);
+ const level5=side===1?prev.h:prev.l;
+ check('confirmation5',fresh5&&heldStructure&&directional(b)&&side*(b.c-level5)>0&&side*(b.c-fe.at(-1))>0&&side*(b.c-(side===1?p.h:p.l))>0,'5分钟尚未在15分钟确认后放量企稳，或回踩结构已失守');
  check('volume5',Number.isFinite(ratio5)&&ratio5>=1.5,`5分钟量比${ratio5.toFixed(2)}，要求≥1.50`);
- check('trigger1',a.t>=b.t+PERIODS['5m']&&directional(a)&&side*(a.c-(side===1?up.h:up.l))>0&&side*(a.c-ue.at(-1))>0&&side*(ue.at(-1)-ue.at(-3))>0,'1分钟尚未在5分钟收盘后突破前高/低并站稳EMA9');
+ check('trigger1',a.t>=b.t+PERIODS['5m']&&u.filter(c=>c.t>=s.t+PERIODS['15m']).every(c=>side===1?c.l>=p.l:c.h<=p.h)&&directional(a)&&side*(a.c-(side===1?up.h:up.l))>0&&side*(a.c-ue.at(-1))>0&&side*(ue.at(-1)-ue.at(-3))>0,'1分钟尚未在5分钟收盘后突破前高/低并站稳EMA9');
  const bid=Number(quote?.bidPr),ask=Number(quote?.askPr),ts=Number(quote?.ts);
  check('quote',bid>0&&ask>=bid&&Number.isFinite(ts)&&Math.abs(now-ts)<=60000,'最新报价无效或超过60秒');
  const half=Math.min(v*.15,vu*.25),entryLow=a.c-half,entryHigh=a.c+half,price=side===1?ask:bid,worst=side===1?entryHigh:entryLow;
  check('zone',checks.quote&&price>=entryLow&&price<=entryHigh&&Math.abs(price-b.c)<=v*.5,'报价超出1分钟入场区间或偏离5分钟收盘超过0.5 ATR');
  if(!setup)return finish({direction:side===1?'做多':'做空',volumeRatio15:ratio15,volumeRatio5:ratio5});
  const pivot5=pivots(f).filter(x=>x.kind===lowKind).at(-1);
- const setupStop=setup==='顺势回踩企稳'?(side===1?p.l:p.h):anchor?.price;
+ const setupStop=side===1?p.l:p.h;
  const stop=setupStop!=null&&pivot5?(side===1?Math.min(setupStop,pivot5.price):Math.max(setupStop,pivot5.price))-side*v*.2:NaN;
  const risk=side*(worst-stop);
  check('stop',risk>=v*.8&&risk<=v*3,'缺少已确认摆动止损，或止损距离不在0.8–3 ATR');
@@ -69,5 +67,6 @@ export function analyze({symbol,fourHour,hour,structure,entry,micro,quote,now,fe
  const rr=netRR(worst,stop,target1,side,fee,slip),rr2=netRR(worst,stop,target2,side,fee,slip);
  check('rr',checks.stop&&checks.targets&&Number.isFinite(rr)&&rr>=2&&rr2>=2,`第一止盈最差入场净RR${Number.isFinite(rr)?rr.toFixed(2):'不可计算'}，要求≥2.00`);
  const confirmed=Object.values(checks).every(x=>x===true);
- return finish({status:confirmed?'可入场':'观察',direction:side===1?'做多':'做空',kind:setup,diagnostics:{computedNetRR:Number.isFinite(rr)?rr:null,computedNetRR2:Number.isFinite(rr2)?rr2:null},...(confirmed?{price,entryLow,entryHigh,stop,target:target1,target1,target2,rr,rr2}:{}),signalTime:a.t+PERIODS['1m'],setupId:`${symbol}:${side}:${s.t}:${setup}`,volumeRatio15:ratio15,volumeRatio5:ratio5,expiresAt:a.t+2*PERIODS['1m'],maxHoldingMinutes:120});
+ const focused=!confirmed&&['data','cost','trend4h','trend1h','alignment','structure15','volume15','confirmation5','volume5','quote','stop','targets','rr'].every(k=>checks[k]===true);
+ return finish({status:confirmed?'可入场':focused?'重点观察':'观察',direction:side===1?'做多':'做空',kind:setup,diagnostics:{computedNetRR:Number.isFinite(rr)?rr:null,computedNetRR2:Number.isFinite(rr2)?rr2:null},...(confirmed?{price,entryLow,entryHigh,stop,target:target1,target1,target2,rr,rr2}:{}),signalTime:a.t+PERIODS['1m'],setupId:`${symbol}:${side}:${s.t}:${setup}`,volumeRatio15:ratio15,volumeRatio5:ratio5,expiresAt:a.t+2*PERIODS['1m'],maxHoldingMinutes:120});
 }
